@@ -1,78 +1,128 @@
 # Coffee Tracker API
 
-Track your caffeine consumption and heart rate to quantify your addiction and watch your cardiovascular system slowly deteriorate.
+Track your caffeine consumption and heart rate to quantify your addiction and watch your cardiovascular system slowly deteriorate with scientific precision.
 
 ## What it does
 
-- Logs coffee consumption with caffeine content
-- Tracks heart rate readings
-- Correlates caffeine intake with heart rate spikes
-- Tells you how badly you're poisoning yourself
+- Logs coffee consumption with caffeine content validation (0-1000mg)
+- Tracks heart rate readings with medical context (30-250 BPM)
+- Correlates caffeine intake with heart rate spikes using statistical analysis
+- Provides detailed analytics on your slow descent into caffeine dependency
+- Rate limits your API abuse (because even APIs need boundaries)
+- Validates input so you can't log impossible vital signs
 
 ## Project Structure
 
 ```
 coffee-tracker/
 ├── Dockerfile                 # Container build instructions
-├── docker-compose.yml         # Docker orchestration
+├── docker-compose.yml         # Docker orchestration with Redis
 ├── requirements.txt          # Python dependencies
-├── .env                      # Environment variables
+├── requirements-dev.txt      # Development dependencies
+├── Makefile                  # Development commands
+├── pytest.ini               # Test configuration
+├── .env.example              # Environment variables template
 ├── .dockerignore            # Files excluded from Docker build
 ├── .gitignore               # Files excluded from git
 ├── README.md                # This file
 ├── app/
 │   ├── __init__.py          # Python package marker
-│   ├── main.py              # FastAPI application entry point
-│   ├── models.py            # SQLAlchemy database models
+│   ├── main.py              # FastAPI application with middleware
+│   ├── models.py            # SQLAlchemy models with timezone support
 │   ├── database.py          # Database connection and setup
+│   ├── auth.py              # API authentication
 │   └── routers/
 │       ├── __init__.py      # Router package marker
-│       ├── coffee.py        # Coffee tracking endpoints
-│       └── heartrate.py     # Heart rate tracking endpoints
+│       ├── coffee.py        # Coffee tracking with validation
+│       └── heartrate.py     # Heart rate tracking with correlation
+├── tests/
+│   ├── __init__.py          # Test package marker
+│   ├── conftest.py          # Test configuration and fixtures
+│   ├── test_coffee.py       # Coffee endpoint tests
+│   └── test_heartrate.py    # Heart rate endpoint tests
 └── data/                    # SQLite database storage (created on first run)
 ```
+
+## Features
+
+### Input Validation
+- **Caffeine**: 0-1000mg range (because 1000mg+ is basically poison)
+- **Heart Rate**: 30-250 BPM range (below 30 = probably dead, above 250 = physically impossible)
+- **Text Fields**: Length limits to prevent essay submissions
+- **Timezone Aware**: All timestamps include proper timezone information
+
+### Rate Limiting
+- **General Endpoints**: 30 requests/minute
+- **Health Check**: 60 requests/minute  
+- **Data Logging**: Higher limits for actual usage
+- **Redis Backend**: Persistent rate limiting across container restarts
+
+### Analytics & Correlation
+- **Statistical Analysis**: Mean, median, standard deviation
+- **Baseline Comparison**: Heart rate before vs after caffeine
+- **Time Windows**: Configurable correlation analysis periods
+- **Health Assessment**: Automated interpretation of your vital signs
+
+### Security
+- **API Key Authentication**: Bearer token required for all data endpoints
+- **CORS Protection**: Configurable allowed origins
+- **Trusted Hosts**: Prevents host header attacks
+- **Request Logging**: Track API usage and performance
 
 ## Installation & Setup
 
 ### Prerequisites
-- Docker
-- docker-compose
+- Docker and docker-compose
 - Basic understanding that you have a caffeine problem
 
 ### Quick Start
 
-1. **Clone or create the project structure**
+1. **Clone the repository**
    ```bash
-   mkdir coffee-tracker
+   git clone <repo-url>
    cd coffee-tracker
-   # Copy all files from this repo
    ```
 
-2. **Build and run**
+2. **Copy environment file**
    ```bash
-   docker-compose up --build
+   cp .env.example .env
+   # Edit .env and change the default API_KEY
    ```
 
-3. **Verify it's working**
+3. **Build and run**
    ```bash
+   make up
+   # or manually:
+   docker-compose up --build -d
+   ```
+
+4. **Verify it's working**
+   ```bash
+   make health
+   # or manually:
    curl http://localhost:8000/health
    ```
 
-### Development Mode
+### Development Setup
 
-Run in detached mode:
 ```bash
-docker-compose up -d --build
-```
+# Start services
+make up
 
-View logs:
-```bash
-docker-compose logs -f
-```
+# View logs
+make logs
 
-Stop everything:
-```bash
-docker-compose down
+# Run tests
+make test
+
+# Validate API
+make validate
+
+# Check status
+make status
+
+# Stop everything
+make down
 ```
 
 ## API Usage
@@ -80,17 +130,28 @@ docker-compose down
 ### Base URL
 `http://localhost:8000`
 
+### Authentication
+All endpoints except `/health` and `/` require authentication:
+
+```bash
+# Set your API key (change the default in .env)
+export API_KEY="your-secret-api-key-here"
+
+# Use in requests
+curl -H "Authorization: Bearer $API_KEY" \
+     http://localhost:8000/coffee/today
+```
+
 ### Documentation
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
+- **Swagger UI**: `http://localhost:8000/docs`
+- **ReDoc**: `http://localhost:8000/redoc`
+- **API Info**: `http://localhost:8000/info`
 
 ### Coffee Endpoints
 
-**⚠️ All endpoints require authentication with API key**
-
 **Log coffee consumption:**
 ```bash
-curl -H "Authorization: Bearer YOUR_API_KEY_HERE" \
+curl -H "Authorization: Bearer $API_KEY" \
      -X POST http://localhost:8000/coffee/ \
      -H "Content-Type: application/json" \
      -d '{
@@ -102,19 +163,36 @@ curl -H "Authorization: Bearer YOUR_API_KEY_HERE" \
 
 **Get today's caffeine total:**
 ```bash
-curl -H "Authorization: Bearer YOUR_API_KEY_HERE" \
+curl -H "Authorization: Bearer $API_KEY" \
      http://localhost:8000/coffee/today
 ```
 
-**Get weekly summary:**
+**Response:**
+```json
+{
+  "date": "2025-07-23",
+  "total_caffeine_mg": 285.0,
+  "addiction_level": "moderate addict",
+  "recommended_max": 400,
+  "over_limit": false
+}
+```
+
+**Get weekly breakdown:**
 ```bash
-curl -H "Authorization: Bearer YOUR_API_KEY_HERE" \
+curl -H "Authorization: Bearer $API_KEY" \
      http://localhost:8000/coffee/week
+```
+
+**Get detailed statistics:**
+```bash
+curl -H "Authorization: Bearer $API_KEY" \
+     "http://localhost:8000/coffee/stats?days=30"
 ```
 
 **Update coffee log:**
 ```bash
-curl -H "Authorization: Bearer YOUR_API_KEY_HERE" \
+curl -H "Authorization: Bearer $API_KEY" \
      -X PUT http://localhost:8000/coffee/1 \
      -H "Content-Type: application/json" \
      -d '{"caffeine_mg": 120}'
@@ -124,7 +202,7 @@ curl -H "Authorization: Bearer YOUR_API_KEY_HERE" \
 
 **Log heart rate:**
 ```bash
-curl -H "Authorization: Bearer YOUR_API_KEY_HERE" \
+curl -H "Authorization: Bearer $API_KEY" \
      -X POST http://localhost:8000/heartrate/ \
      -H "Content-Type: application/json" \
      -d '{
@@ -136,130 +214,265 @@ curl -H "Authorization: Bearer YOUR_API_KEY_HERE" \
 
 **Get current heart rate:**
 ```bash
-curl -H "Authorization: Bearer YOUR_API_KEY_HERE" \
+curl -H "Authorization: Bearer $API_KEY" \
      http://localhost:8000/heartrate/current
+```
+
+**Response:**
+```json
+{
+  "bpm": 85,
+  "timestamp": "2025-07-23T22:30:00Z",
+  "context": "resting",
+  "status": "normal",
+  "minutes_ago": 2,
+  "is_recent": true
+}
+```
+
+**Get heart rate statistics:**
+```bash
+curl -H "Authorization: Bearer $API_KEY" \
+     "http://localhost:8000/heartrate/stats?days=7"
 ```
 
 **Get caffeine correlation analysis:**
 ```bash
-curl -H "Authorization: Bearer YOUR_API_KEY_HERE" \
-     http://localhost:8000/heartrate/correlation
+curl -H "Authorization: Bearer $API_KEY" \
+     "http://localhost:8000/heartrate/correlation?hours_after=3"
 ```
 
 ## Database
 
-- **Type**: SQLite
+- **Type**: SQLite with timezone support
 - **Location**: `./data/coffee.db`
 - **Persistence**: Data survives container restarts
-- **Backup**: Just copy the `./data/coffee.db` file
+- **Backup**: `make backup` creates timestamped backups
+- **Performance**: Indexed on timestamp and key fields
 
 ### Database Schema
 
 **coffee_logs table:**
 - `id` - Primary key
-- `timestamp` - When you consumed caffeine
-- `caffeine_mg` - How much you poisoned yourself
-- `coffee_type` - What type of coffee
-- `notes` - Your regrets
+- `timestamp` - When you consumed caffeine (timezone-aware)
+- `caffeine_mg` - How much you poisoned yourself (0-1000mg)
+- `coffee_type` - What type of coffee (max 100 chars)
+- `notes` - Your regrets (max 1000 chars)
 
 **heart_rate_logs table:**
-- `id` - Primary key
-- `timestamp` - When measured
-- `bpm` - Beats per minute
-- `context` - resting/active/post-coffee/panic
-- `notes` - How you're feeling
+- `id` - Primary key  
+- `timestamp` - When measured (timezone-aware)
+- `bpm` - Beats per minute (30-250 range)
+- `context` - resting/active/post-coffee/panic/etc (max 50 chars)
+- `notes` - How you're feeling (max 1000 chars)
 
 ## Configuration
 
 ### Environment Variables (.env)
 ```env
+# Database
 DATABASE_URL=sqlite:///data/coffee.db
+
+# Authentication - CHANGE THIS IN PRODUCTION
+API_KEY=coffee-addict-secret-key-2025
+
+# Rate Limiting
+REDIS_URL=redis://redis:6379/0
+
+# Security
+ALLOWED_HOSTS=localhost,127.0.0.1
+CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+
+# Application
+APP_NAME="Coffee Tracker"
 FASTAPI_ENV=production
 DEBUG=false
-APP_NAME="Coffee Tracker"
 HOST=0.0.0.0
 PORT=8000
+LOG_LEVEL=info
 ```
 
-### Docker Configuration
-- **Port**: 8000 (mapped to host 8000)
-- **Volume**: `./data` mounted to `/app/data`
-- **Restart**: unless-stopped
-- **Health check**: `/health` endpoint
+### Validation Rules
+- **Caffeine**: 0-1000mg (over 1000mg triggers danger warning)
+- **Heart Rate**: 30-250 BPM (outside range triggers medical warnings)
+- **Text Fields**: Various length limits to prevent abuse
+- **Rate Limits**: Configurable per endpoint type
 
 ## Deployment
 
 ### Local Development
 ```bash
-# Standard run
-docker-compose up --build
+# Quick start
+make dev
 
-# Background run
-docker-compose up -d --build
-
-# Rebuild after changes
-docker-compose down
-docker-compose up --build
+# Manual steps
+make build
+make up
+make logs
 ```
 
 ### Production Deployment
 
-**Option 1: Direct Docker**
-```bash
-# Build image
-docker build -t coffee-tracker .
+1. **Prepare environment:**
+   ```bash
+   # Copy and configure
+   cp .env.example .env
+   # Change API_KEY to something secure
+   # Configure CORS_ORIGINS for your frontend
+   ```
 
-# Run container
-docker run -d \
-  --name coffee-tracker \
-  -p 8000:8000 \
-  -v $(pwd)/data:/app/data \
-  --restart unless-stopped \
-  coffee-tracker
+2. **Deploy with Docker Compose:**
+   ```bash
+   docker-compose up -d --build
+   ```
+
+3. **Verify deployment:**
+   ```bash
+   make validate
+   make health
+   ```
+
+### Production Checklist
+- [ ] Change default API_KEY in .env
+- [ ] Configure CORS_ORIGINS for your frontend
+- [ ] Set up HTTPS/TLS termination (nginx reverse proxy)
+- [ ] Configure log aggregation
+- [ ] Set up monitoring and alerts
+- [ ] Configure backup strategy (`make backup` in cron)
+- [ ] Review rate limits for your usage
+
+### Reverse Proxy (nginx example)
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+    
+    location / {
+        proxy_pass http://localhost:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
 ```
 
-**Option 2: Docker Compose (recommended)**
+## Development
+
+### Make Commands
 ```bash
-# Production run
-docker-compose -f docker-compose.yml up -d --build
+make help          # Show all available commands
+make up             # Start services  
+make down           # Stop services
+make logs           # Show service logs
+make test           # Run tests locally
+make test-docker    # Run tests in Docker
+make validate       # Validate API endpoints
+make backup         # Backup database
+make clean          # Clean up containers
+make prod-check     # Production readiness check
 ```
 
-### Remote Server Deployment
-1. Copy project to server
-2. Ensure Docker/docker-compose installed
-3. Run `docker-compose up -d --build`
-4. Set up reverse proxy (nginx) if needed
-5. Configure firewall to allow port 8000
+### Adding New Features
 
-### Data Backup
+1. **Add endpoint to router:**
+   ```python
+   # In app/routers/coffee.py or heartrate.py
+   @router.get("/new-endpoint")
+   def new_endpoint(db: Session = Depends(get_db)):
+       return {"status": "working"}
+   ```
+
+2. **Add validation:**
+   ```python
+   # Use Pydantic models with field_validator
+   @field_validator('field_name')
+   @classmethod
+   def validate_field(cls, v):
+       # validation logic
+       return v
+   ```
+
+3. **Test the feature:**
+   ```bash
+   make test
+   make validate
+   ```
+
+4. **Restart services:**
+   ```bash
+   make restart
+   ```
+
+### Database Changes
+1. Modify `models.py`
+2. Rebuild container: `make build`
+3. Database tables auto-update on startup
+
+### Running Tests
 ```bash
-# Backup database
-cp ./data/coffee.db ./backup/coffee-backup-$(date +%Y%m%d).db
+# Local testing (requires Python environment)
+make test
 
-# Restore database
-cp ./backup/coffee-backup-20250723.db ./data/coffee.db
+# Docker testing (isolated environment)  
+make test-docker
+
+# Watch mode for development
+make test-watch
 ```
 
-## Monitoring
+## API Response Examples
 
-### Health Check
-```bash
-curl http://localhost:8000/health
+### Coffee Today Response
+```json
+{
+  "date": "2025-07-23",
+  "total_caffeine_mg": 285.0,
+  "addiction_level": "moderate addict",
+  "recommended_max": 400,
+  "over_limit": false
+}
 ```
 
-### Container Status
-```bash
-docker-compose ps
-docker-compose logs coffee-tracker
+### Coffee Statistics Response
+```json
+{
+  "period_days": 30,
+  "total_coffees": 45,
+  "total_caffeine_mg": 4275.0,
+  "average_per_day": 142.5,
+  "average_per_coffee": 95.0,
+  "max_single_dose": 200.0,
+  "min_single_dose": 50.0,
+  "most_common_type": "espresso",
+  "days_with_caffeine": 28
+}
 ```
 
-### Database Check
-```bash
-# Connect to container
-docker-compose exec coffee-tracker sh
-
-# Check if database exists
-ls -la /app/data/
+### Heart Rate Correlation Response
+```json
+{
+  "correlations": [
+    {
+      "coffee_time": "2025-07-23T14:30:00+00:00",
+      "caffeine_mg": 95.0,
+      "coffee_type": "espresso",
+      "avg_heartrate_after": 88.5,
+      "baseline_heartrate": 72.0,
+      "hr_increase": 16.5,
+      "readings_count": 3,
+      "time_window_hours": 2
+    }
+  ],
+  "analysis": {
+    "total_correlations": 15,
+    "avg_caffeine_dose": 98.3,
+    "avg_hr_increase": 14.2,
+    "max_hr_increase": 28.0,
+    "time_window_analyzed": "2 hours after coffee"
+  },
+  "summary": "Moderate heart rate response to caffeine"
+}
 ```
 
 ## Troubleshooting
@@ -267,84 +480,108 @@ ls -la /app/data/
 ### Container won't start
 ```bash
 # Check logs
-docker-compose logs
+make logs
 
 # Common issues:
-# - Port 8000 already in use
-# - Missing requirements.txt dependencies
-# - Permission issues with ./data folder
+# - Port 8000 already in use: change port in docker-compose.yml
+# - Redis connection failed: ensure Redis container is running
+# - Permission issues: check ./data folder permissions
 ```
 
 ### Database issues
 ```bash
+# Check database file
+ls -la ./data/
+
 # Recreate database
-rm -rf ./data/coffee.db
-docker-compose restart
+make down
+rm -f ./data/coffee.db
+make up
 ```
 
 ### API not responding
 ```bash
-# Check if container is running
-docker-compose ps
-
-# Check container logs
-docker-compose logs -f coffee-tracker
+# Check container status
+make status
 
 # Test container internally
 docker-compose exec coffee-tracker curl localhost:8000/health
+
+# Check rate limiting
+# If you hit rate limits, wait or restart Redis:
+docker-compose restart redis
 ```
 
-### Permission errors
+### Authentication errors
 ```bash
-# Fix data directory permissions
-sudo chown -R $USER:$USER ./data
-chmod 755 ./data
+# Verify API key in .env
+cat .env | grep API_KEY
+
+# Test with correct header
+curl -H "Authorization: Bearer your-api-key" \
+     http://localhost:8000/coffee/today
 ```
 
-## Development
-
-### Adding new endpoints
-1. Add route to appropriate router file
-2. Update models if needed
-3. Restart container: `docker-compose restart`
-
-### Database changes
-1. Modify `models.py`
-2. Rebuild container: `docker-compose up --build`
-3. Database tables auto-update on startup
-
-### Dependencies
-Add to `requirements.txt` and rebuild:
+### Performance issues
 ```bash
-echo "new-package==1.0.0" >> requirements.txt
-docker-compose up --build
+# Check database size
+ls -lh ./data/coffee.db
+
+# Check Redis memory usage
+docker-compose exec redis redis-cli info memory
+
+# Review rate limiting
+curl http://localhost:8000/info
 ```
 
-## API Response Examples
+## Monitoring & Maintenance
 
-### Coffee today response
-```json
-{
-  "date": "2025-07-23",
-  "total_caffeine_mg": 285,
-  "addiction_level": "moderate"
-}
+### Health Monitoring
+```bash
+# API health
+make health
+
+# Container status  
+make status
+
+# Service logs
+make logs
 ```
 
-### Heart rate correlation response
-```json
-{
-  "correlations": [
-    {
-      "coffee_time": "2025-07-23T14:30:00",
-      "caffeine_mg": 95,
-      "avg_heartrate_after": 88,
-      "readings_count": 3
-    }
-  ],
-  "summary": "Your heart probably hates you"
-}
+### Backup Strategy
+```bash
+# Manual backup
+make backup
+
+# Automated backup (add to crontab)
+0 2 * * * cd /path/to/coffee-tracker && make backup
 ```
+
+### Log Monitoring
+The application logs requests with timing information. For production, consider:
+- Log aggregation (ELK stack, Fluentd)
+- Error monitoring (Sentry)
+- Metrics collection (Prometheus)
+
+## Rate Limits
+
+| Endpoint | Limit | Purpose |
+|----------|-------|---------|
+| General | 30/minute | Prevent API abuse |
+| Health | 60/minute | Allow monitoring |
+| Coffee Logging | 100/hour | Normal usage |
+| Heart Rate | 200/hour | Frequent measurements |
+
+Rate limits are enforced per IP address and persist across container restarts via Redis.
+
+## Security Features
+
+- **API Key Authentication**: Required for all data endpoints
+- **Input Validation**: Prevents injection and invalid data
+- **Rate Limiting**: Protects against abuse
+- **CORS Protection**: Configurable allowed origins
+- **Host Validation**: Prevents host header attacks
+- **Request Logging**: Audit trail for debugging
 
 ## License
 
@@ -353,10 +590,24 @@ Do whatever you want with this. It's just tracking your slow descent into caffei
 ## Contributing
 
 1. Make it work better
-2. Add more ways to shame users about their habits
+2. Add more ways to shame users about their habits  
 3. Don't break existing functionality
 4. Keep the sarcasm
+5. Add tests for new features
+6. Update this README if you add endpoints
+
+## Changelog
+
+### v1.0.0 (Current)
+- ✅ Input validation with medical ranges
+- ✅ Timezone-aware timestamps
+- ✅ Rate limiting with Redis
+- ✅ Statistical correlation analysis
+- ✅ Enhanced API documentation
+- ✅ Comprehensive test suite
+- ✅ Production-ready deployment
+- ✅ Database performance optimizations
 
 ---
 
-**Note**: This API will accurately track your caffeine consumption and heart rate. It will not judge you (much), but the data probably will.
+**Note**: This API will accurately track your caffeine consumption and heart rate. It will not judge you (much), but the data definitely will. The correlation analysis may reveal uncomfortable truths about your relationship with caffeine.
