@@ -86,55 +86,64 @@ docker-compose down
 
 ### Coffee Endpoints
 
+**⚠️ All endpoints require authentication with API key**
+
 **Log coffee consumption:**
 ```bash
-curl -X POST http://localhost:8000/coffee/ \
-  -H "Content-Type: application/json" \
-  -d '{
-    "caffeine_mg": 95,
-    "coffee_type": "espresso",
-    "notes": "why did I drink this at 11pm"
-  }'
+curl -H "Authorization: Bearer YOUR_API_KEY_HERE" \
+     -X POST http://localhost:8000/coffee/ \
+     -H "Content-Type: application/json" \
+     -d '{
+       "caffeine_mg": 95,
+       "coffee_type": "espresso",
+       "notes": "why did I drink this at 11pm"
+     }'
 ```
 
 **Get today's caffeine total:**
 ```bash
-curl http://localhost:8000/coffee/today
+curl -H "Authorization: Bearer YOUR_API_KEY_HERE" \
+     http://localhost:8000/coffee/today
 ```
 
 **Get weekly summary:**
 ```bash
-curl http://localhost:8000/coffee/week
+curl -H "Authorization: Bearer YOUR_API_KEY_HERE" \
+     http://localhost:8000/coffee/week
 ```
 
 **Update coffee log:**
 ```bash
-curl -X PUT http://localhost:8000/coffee/1 \
-  -H "Content-Type: application/json" \
-  -d '{"caffeine_mg": 120}'
+curl -H "Authorization: Bearer YOUR_API_KEY_HERE" \
+     -X PUT http://localhost:8000/coffee/1 \
+     -H "Content-Type: application/json" \
+     -d '{"caffeine_mg": 120}'
 ```
 
 ### Heart Rate Endpoints
 
 **Log heart rate:**
 ```bash
-curl -X POST http://localhost:8000/heartrate/ \
-  -H "Content-Type: application/json" \
-  -d '{
-    "bpm": 85,
-    "context": "resting",
-    "notes": "surprisingly normal"
-  }'
+curl -H "Authorization: Bearer YOUR_API_KEY_HERE" \
+     -X POST http://localhost:8000/heartrate/ \
+     -H "Content-Type: application/json" \
+     -d '{
+       "bpm": 85,
+       "context": "resting",
+       "notes": "surprisingly normal"
+     }'
 ```
 
 **Get current heart rate:**
 ```bash
-curl http://localhost:8000/heartrate/current
+curl -H "Authorization: Bearer YOUR_API_KEY_HERE" \
+     http://localhost:8000/heartrate/current
 ```
 
 **Get caffeine correlation analysis:**
 ```bash
-curl http://localhost:8000/heartrate/correlation
+curl -H "Authorization: Bearer YOUR_API_KEY_HERE" \
+     http://localhost:8000/heartrate/correlation
 ```
 
 ## Database

@@ -35,16 +35,22 @@ logs:
 test:
 	@echo "Running tests..."
 	@if [ -f $(TEST_DB) ]; then rm $(TEST_DB); fi
-	python -m pytest -v
+	@if [ -d "venv" ]; then \
+		echo "Using virtual environment..."; \
+		venv/bin/python -m pytest -v; \
+	else \
+		echo "Using system Python3..."; \
+		python3 -m pytest -v; \
+	fi
 	@if [ -f $(TEST_DB) ]; then rm $(TEST_DB); fi
 
 test-docker:
 	@echo "Running tests in Docker..."
-	docker-compose -f $(COMPOSE_FILE) exec $(SERVICE_NAME) python -m pytest -v
+	docker-compose -f $(COMPOSE_FILE) run --rm -e DATABASE_URL=sqlite:///test_coffee_tracker.db $(SERVICE_NAME) sh -c "rm -f test_coffee_tracker.db && python -m pytest -v"
 
 test-docker-build:
 	@echo "Running tests in fresh container..."
-	docker-compose -f $(COMPOSE_FILE) run --rm $(SERVICE_NAME) python -m pytest -v
+	docker-compose -f $(COMPOSE_FILE) run --rm -e DATABASE_URL=sqlite:///test_coffee_tracker.db $(SERVICE_NAME) sh -c "rm -f test_coffee_tracker.db && python -m pytest -v"
 
 clean:
 	@echo "Cleaning up..."

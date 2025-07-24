@@ -2,6 +2,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.models import Base
 import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Database URL from environment or default
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///data/coffee.db")

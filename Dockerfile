@@ -5,11 +5,13 @@ WORKDIR /app
 # Install system dependencies
 RUN apk add --no-cache gcc musl-dev
 
-# Copy requirements
-COPY requirements.txt requirements-dev.txt ./
+# Copy requirements first for better caching
+COPY requirements.txt .
+COPY requirements-dev.txt .
 
-# Install Python dependencies (including dev deps for testing)
-RUN pip install --no-cache-dir -r requirements.txt -r requirements-dev.txt
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements-dev.txt
 
 # Copy application code
 COPY app/ ./app/
