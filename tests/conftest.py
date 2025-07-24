@@ -10,7 +10,7 @@ from app.models import Base
 from app.auth import verify_api_key
 
 # Create test database with unique name
-TEST_DATABASE_URL = "sqlite:///./test_coffee_tracker.db"
+TEST_DATABASE_URL = "sqlite:///test_coffee_tracker.db"
 # Test API key
 TEST_API_KEY = "test-api-key-for-tests"
 
