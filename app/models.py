@@ -13,11 +13,7 @@ class CoffeeLog(Base):
     coffee_type = Column(String(100))
     notes = Column(Text)
     
-    # Add indexes for performance
-    __table_args__ = (
-        Index('ix_coffee_logs_timestamp', 'timestamp'),
-        Index('ix_coffee_logs_caffeine_mg', 'caffeine_mg'),
-    )
+
 
 class HeartRateLog(Base):
     __tablename__ = "heart_rate_logs"
@@ -28,9 +24,3 @@ class HeartRateLog(Base):
     context = Column(String(50))  # resting, active, post-coffee, etc
     notes = Column(Text)
     
-    # Add indexes for performance
-    __table_args__ = (
-        Index('ix_heart_rate_logs_timestamp', 'timestamp'),
-        Index('ix_heart_rate_logs_bpm', 'bpm'),
-        Index('ix_heart_rate_logs_context', 'context'),
-    )
