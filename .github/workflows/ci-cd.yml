@@ -1,0 +1,176 @@
+name: Coffee Tracker CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+          
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-cov httpx python-dotenv
+        
+    - name: Lint with flake8
+      run: |
+        pip install flake8
+        flake8 app/ tests/ --max-line-length=88 --ignore=E203,W503
+      continue-on-error: true
+      
+    - name: Run tests
+      run: |
+        python -m pytest -v --cov=app --cov-report=xml --cov-report=term
+        
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        fail_ci_if_error: false
+
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: testm
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  build:
+    runs-on: ubuntu-latest
+    needs: [test, security-scan]
+    if: github.event_name == 'push'
+    
+    outputs:
+      image-digest: ${{ steps.build.outputs.digest }}
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+          
+    - name: Build and push Docker image
+      id: build
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  deploy-staging:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/develop'
+    environment: staging
+    
+    steps:
+    - name: Deploy to staging
+      run: |
+        echo "Deploying to staging environment..."
+        echo "Image digest: ${{ needs.build.outputs.image-digest }}"
+        # Add your staging deployment commands here
+        # Example: kubectl, docker-compose, or API calls to your hosting provider
+
+  deploy-production:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    
+    steps:
+    - name: Deploy to production
+      env:
+        API_KEY: ${{ secrets.PRODUCTION_API_KEY }}
+      run: |
+        echo "Deploying to production environment..."
+        echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+        # Add your production deployment commands here
+        
+        # Example for VPS deployment via SSH:
+        # - Install SSH key from secrets
+        # - SSH to server and pull new image
+        # - Update docker-compose and restart services
+        
+        # Example for cloud deployment:
+        # - Use cloud provider CLI tools
+        # - Update container service with new image
+        
+  notify:
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, deploy-production]
+    if: always()
+    
+    steps:
+    - name: Notify deployment status
+      run: |
+        if [ "${{ needs.deploy-production.result }}" == "success" ]; then
+          echo "✅ Production deployment successful"
+        elif [ "${{ needs.deploy-staging.result }}" == "success" ]; then
+          echo "✅ Staging deployment successful"
+        else
+          echo "❌ Deployment failed"
+        fi
+        # Add notification logic here (Slack, email, etc.)
