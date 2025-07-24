@@ -75,7 +75,7 @@ def client(test_db):
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[verify_api_key] = mock_verify_api_key
 
-    with TestClient(app) as test_client:
+    with TestClient(app=app) as test_client:
         # Set default headers for authentication
         test_client.headers.update({"Authorization": f"Bearer {TEST_API_KEY}"})
         yield test_client

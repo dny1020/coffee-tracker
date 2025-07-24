@@ -40,7 +40,7 @@ app.add_middleware(
 # Trusted host middleware for security
 app.add_middleware(
     TrustedHostMiddleware, 
-    allowed_hosts=["localhost", "127.0.0.1", "*.coffee-tracker.local"]
+    allowed_hosts=["localhost", "127.0.0.1", "*.coffee-tracker.local", "testserver"]
 )
 
 # Custom middleware for request logging
