@@ -29,11 +29,10 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run pytest
+      - name: Run tests
         env:
           API_KEY: test-ci-key
-        run: |
-          pytest -v
+        run: pytest -v
 
 
   build:
