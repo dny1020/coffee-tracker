@@ -41,7 +41,7 @@ app.add_middleware(
 # Trusted host middleware for security
 app.add_middleware(
     TrustedHostMiddleware, 
-    allowed_hosts=["localhost", "127.0.0.1", "*.coffee-tracker.local", "testserver"]
+    allowed_hosts=["localhost", "127.0.0.1", "*.coffee-tracker.local", "testserver", "coffee.newsbot.lat", "*.newsbot.lat", "coffee.danilocloud.me", "*.danilocloud.me"]
 )
 
 # Custom middleware for request logging

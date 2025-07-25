@@ -12,7 +12,7 @@ API_KEY = os.getenv("API_KEY", "coffee-addict-secret-key-2025")
 
 security = HTTPBearer()
 
-def verify_api_key(credentials: HTTPAuthorizationCredentials = Security(security)):
+def verify_api_key(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """Verify API key from Authorization header"""
     if not credentials:
         raise HTTPException(status_code=401, detail="API key required")
