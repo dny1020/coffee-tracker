@@ -35,6 +35,7 @@ jobs:
         run: |
           pytest -v
 
+
   build:
     runs-on: ubuntu-latest
     needs: test  # ← solo se ejecuta si los tests pasan
