@@ -1,4 +1,4 @@
-.PHONY: help build up down restart logs test test-watch clean dev shell db-shell backup restore lint format check validate
+.PHONY: help build up down restart logs test test-clean test-watch clean dev shell db-shell backup restore lint format check validate
 
 # Variables
 COMPOSE_FILE = docker-compose.yml
@@ -19,6 +19,7 @@ help:
 	@echo ""
 	@echo "Testing:"
 	@echo "  test        Run tests locally"
+	@echo "  test-clean  Run tests with completely clean environment"
 	@echo "  test-docker Run tests in Docker"
 	@echo "  validate    Validate API with sample requests"
 	@echo ""
@@ -60,7 +61,9 @@ logs-redis:
 # Testing commands
 test:
 	@echo "Running tests locally..."
-	@if [ -f $(TEST_DB) ]; then rm $(TEST_DB); fi
+	@echo "Cleaning up any existing test databases..."
+	@rm -f $(TEST_DB) test_coffee_tracker.db ./data/test_*.db
+	@echo "Running tests with proper isolation..."
 	@if [ -d "venv" ]; then \
 		echo "Using virtual environment..."; \
 		venv/bin/python -m pytest -v; \
@@ -68,11 +71,12 @@ test:
 		echo "Using system Python3..."; \
 		python3 -m pytest -v; \
 	fi
-	@if [ -f $(TEST_DB) ]; then rm $(TEST_DB); fi
+	@echo "Cleaning up test files..."
+	@rm -f $(TEST_DB) test_coffee_tracker.db ./data/test_*.db
 
 test-docker:
 	@echo "Running tests in Docker..."
-	docker-compose -f $(COMPOSE_FILE) run --rm -e DATABASE_URL=sqlite:///test_coffee_tracker.db $(SERVICE_NAME) sh -c "rm -f test_coffee_tracker.db && python -m pytest -v"
+	docker-compose -f $(COMPOSE_FILE) run --rm $(SERVICE_NAME) sh -c "python -m pytest -v"
 
 test-watch:
 	@echo "Running tests in watch mode..."
@@ -81,6 +85,18 @@ test-watch:
 	else \
 		python3 -m pytest -f; \
 	fi
+
+test-clean:
+	@echo "Running tests with completely fresh environment..."
+	@echo "Cleaning up any previous temp files..."
+	@rm -f ./data/coffee.db.temp ./data/coffee.db.backup $(TEST_DB) test_coffee_tracker.db ./data/test_*.db
+	@echo "Running tests with isolated database..."
+	@if [ -d "venv" ]; then \
+		venv/bin/python -m pytest -v; \
+	else \
+		python3 -m pytest -v; \
+	fi
+	@echo "Test complete"
 
 validate: up
 	@echo "Validating API endpoints..."

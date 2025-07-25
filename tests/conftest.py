@@ -2,59 +2,40 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-import os
 
 from app.main import app
 from app.database import get_db
 from app.models import Base
 from app.auth import verify_api_key
 
-# Create test database with unique name
-TEST_DATABASE_URL = "sqlite:///:memory:"
 # Test API key
 TEST_API_KEY = "test-api-key-for-tests"
 
 
-@pytest.fixture(scope="session")
-def test_engine():
-    """Create test database engine"""
-    # Remove test database if it exists
-    test_db_path = "./test_coffee_tracker.db"
-    if os.path.exists(test_db_path):
-        os.remove(test_db_path)
-
-    engine = create_engine(
-        TEST_DATABASE_URL,
+@pytest.fixture(scope="function")
+def test_db():
+    """Create a fresh test database for each test"""
+    # Create in-memory SQLite database
+    test_engine = create_engine(
+        "sqlite:///:memory:",
         connect_args={"check_same_thread": False}
     )
-    Base.metadata.create_all(bind=engine)
-    yield engine
 
-    # Cleanup
-    Base.metadata.drop_all(bind=engine)
-    if os.path.exists(test_db_path):
-        os.remove(test_db_path)
+    # Create all tables
+    Base.metadata.create_all(bind=test_engine)
 
-
-@pytest.fixture(scope="function")
-def test_db(test_engine):
-    """Create test database session with transaction rollback"""
+    # Create session
     TestingSessionLocal = sessionmaker(
-        autocommit=False,
-        autoflush=False,
-        bind=test_engine
+        autocommit=False, autoflush=False, bind=test_engine
     )
 
-    # Use a single connection for the entire test
-    connection = test_engine.connect()
-    session = TestingSessionLocal(bind=connection)
-
+    db = TestingSessionLocal()
     try:
-        yield session
+        yield db
     finally:
-        session.rollback()
-        session.close()
-        connection.close()
+        db.close()
+        # Clean up tables
+        Base.metadata.drop_all(bind=test_engine)
 
 
 def mock_verify_api_key():
@@ -64,23 +45,22 @@ def mock_verify_api_key():
 
 @pytest.fixture(scope="function")
 def client(test_db):
-    """Create test client with test database and mocked auth"""
+    """Create test client with overridden dependencies"""
     def override_get_db():
         try:
             yield test_db
         finally:
             pass
 
-    # Override dependencies for testing
+    # Override the dependencies
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[verify_api_key] = mock_verify_api_key
 
     with TestClient(app=app) as test_client:
-        # Set default headers for authentication
         test_client.headers.update({"Authorization": f"Bearer {TEST_API_KEY}"})
         yield test_client
 
-    # Clear overrides after test
+    # Clean up overrides
     app.dependency_overrides.clear()
 
 
