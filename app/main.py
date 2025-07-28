@@ -57,10 +57,10 @@ async def log_requests(request: Request, call_next):
     # Add process time header
     response.headers["X-Process-Time"] = str(process_time)
     return response
-
+            
 # Initialize database
-init_db()
-
+if not os.getenv("SKIP_DB_INIT"):
+    init_db()
 # Include routers with auth dependency and rate limiting
 app.include_router(
     coffee.router, 
