@@ -11,7 +11,7 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  test:
+   test:
     runs-on: ubuntu-latest
     name: Run Unit Tests
 
@@ -29,10 +29,16 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Prepare database
+        run: |
+          mkdir -p data
+          python -c "from app.database import init_db; init_db()"
+
       - name: Run tests
         env:
           API_KEY: test-ci-key
-        run: pytest -v
+        run: python -m pytest -v
+
 
 
   build:
