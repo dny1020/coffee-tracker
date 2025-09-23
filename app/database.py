@@ -1,6 +1,3 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from app.models import Base
 import os
 from dotenv import load_dotenv
 
@@ -14,31 +11,38 @@ def get_database_url():
 
 
 def create_database_engine():
-    """Create database engine using current DATABASE_URL"""
+    """Create database engine using current DATABASE_URL (lazy import)."""
+    from sqlalchemy import create_engine
     database_url = get_database_url()
-    return create_engine(
-        database_url, connect_args={"check_same_thread": False}
-    )
+    connect_args = {"check_same_thread": False} if database_url.startswith(
+        "sqlite") else {}
+    return create_engine(database_url, connect_args=connect_args)
 
 
-# Create engine
-engine = create_database_engine()
-
-# Session factory
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Lazy globals
+engine = None
+SessionLocal = None
 
 
 def init_db():
     """Create all tables"""
     # Recreate engine in case DATABASE_URL changed
+    from sqlalchemy.orm import sessionmaker as _sessionmaker
+    # Import models lazily to avoid importing SQLAlchemy at module import time
+    from app.models import Base
     global engine, SessionLocal
     engine = create_database_engine()
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    SessionLocal = _sessionmaker(
+        autocommit=False, autoflush=False, bind=engine)
     Base.metadata.create_all(bind=engine)
 
 
 def get_db():
     """Dependency for getting database session"""
+    global SessionLocal
+    if SessionLocal is None:
+        # Fallback lazy init if not initialized yet
+        init_db()
     db = SessionLocal()
     try:
         yield db
