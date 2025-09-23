@@ -29,14 +29,11 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Prepare database
-        run: |
-          mkdir -p data
-          python -c "from app.database import init_db; init_db()"
-
-      - name: Run tests
+      - name: Run tests (DB disabled)
         env:
           API_KEY: test-ci-key
+          SKIP_DB_INIT: "1"
+          DATABASE_URL: "sqlite:///:memory:"
         run: python -m pytest -v
 
   build:

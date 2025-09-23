@@ -115,9 +115,9 @@ def health_check(request: Request):
     """Health check endpoint for monitoring"""
     try:
         # Test database connection by opening/closing a session
-    from app.database import SessionLocal
-      db = SessionLocal() if SessionLocal is not None else None
-       if db is not None:
+        from app.database import SessionLocal
+        db = SessionLocal() if SessionLocal is not None else None
+        if db is not None:
             db.close()
             db_status = "healthy"
         else:
