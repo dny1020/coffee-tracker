@@ -7,7 +7,7 @@ RUN apk add --no-cache gcc musl-dev curl
 
 # Copiar requirements primero para caching
 COPY requirements.txt .
-COPY requirements-dev.txt .
+
 
 # Instalar dependencias de Python
 RUN pip install --no-cache-dir -r requirements.txt
