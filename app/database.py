@@ -11,12 +11,32 @@ def get_database_url():
 
 
 def create_database_engine():
-    """Create database engine using current DATABASE_URL (lazy import)."""
+    """Create database engine using current DATABASE_URL (lazy import).
+
+    Adds SQLite-specific connect args and enables pool_pre_ping for Postgres reliability.
+    Configures explicit connection pooling for production use.
+    """
     from sqlalchemy import create_engine
     database_url = get_database_url()
-    connect_args = {"check_same_thread": False} if database_url.startswith(
-        "sqlite") else {}
-    return create_engine(database_url, connect_args=connect_args)
+    is_sqlite = database_url.startswith("sqlite")
+    connect_args = {"check_same_thread": False} if is_sqlite else {}
+    
+    # Configure connection pooling for non-SQLite databases
+    if is_sqlite:
+        engine = create_engine(
+            database_url,
+            connect_args=connect_args,
+        )
+    else:
+        engine = create_engine(
+            database_url,
+            connect_args=connect_args,
+            pool_size=10,
+            max_overflow=20,
+            pool_pre_ping=True,
+            pool_recycle=3600,  # Recycle connections after 1 hour
+        )
+    return engine
 
 
 # Lazy globals

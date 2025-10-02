@@ -1,8 +1,7 @@
-from fastapi import FastAPI, Depends, Request, Response
+from fastapi import FastAPI, Depends, Request, Response, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 import time
@@ -11,11 +10,13 @@ import os
 # Import database lazily inside functions to avoid SQLAlchemy import at module import time under Python 3.13
 from app.metrics import observe_request
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+import uuid
 from app.routers import coffee, heartrate
 from app.auth import verify_api_key
+from app.settings import settings
+from app.limiter import limiter
 
-# Rate limiter setup
-limiter = Limiter(key_func=get_remote_address)
+"""Application instance and middleware wiring."""
 
 app = FastAPI(
     title="Coffee Tracker API",
@@ -33,8 +34,7 @@ app.add_middleware(SlowAPIMiddleware)
 # CORS middleware for web frontends
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000",
-                   "http://127.0.0.1:3000"],  # Add your frontend URLs
+    allow_origins=settings.parsed_cors_origins(),
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
@@ -43,30 +43,44 @@ app.add_middleware(
 # Trusted host middleware for security
 app.add_middleware(
     TrustedHostMiddleware,
-    allowed_hosts=["localhost", "127.0.0.1", "*.coffee-tracker.local", "testserver",
-                   "coffee.newsbot.lat", "*.newsbot.lat", "coffee.danilocloud.me", "*.danilocloud.me"]
+    allowed_hosts=settings.parsed_allowed_hosts() + [
+        # Legacy / additional hosts that may still be used in deployment
+        "testserver", "*.coffee-tracker.local"
+    ]
 )
 
-# Custom middleware for request logging
-
-
 @app.middleware("http")
-async def log_requests(request: Request, call_next):
-    start_time = time.time()
+async def security_and_logging_middleware(request: Request, call_next):
+    request_id = str(uuid.uuid4())
+    request.state.request_id = request_id
+    start = time.time()
+
+    # Enforce max body size
+    body = await request.body()
+    if len(body) > settings.max_request_body_bytes:
+        raise HTTPException(status_code=413, detail="Request body too large")
+
     response = await call_next(request)
-    process_time = time.time() - start_time
+    duration = time.time() - start
 
-    # Basic logging (in production, use proper logging)
-    print(f"{request.method} {request.url.path} - {response.status_code} - {process_time:.3f}s")
+    # Basic structured line log
+    print(f"request_id={request_id} method={request.method} path={request.url.path} status={response.status_code} duration_ms={duration*1000:.1f}")
 
-    # Add process time header
-    response.headers["X-Process-Time"] = str(process_time)
+    # Metrics
     try:
-        observe_request(request.method, request.url.path,
-                        response.status_code, process_time)
-    except Exception:
-        # Never let metrics break requests
-        pass
+        observe_request(request.method, request.url.path, response.status_code, duration)
+    except Exception as e:
+        print(f"⚠️  Metrics error: {e}")
+
+    # Add headers
+    response.headers["X-Request-ID"] = request_id
+    response.headers["X-Process-Time"] = f"{duration:.6f}"
+    if settings.security_headers:
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("X-XSS-Protection", "0")
+        response.headers.setdefault("Referrer-Policy", "no-referrer")
+        response.headers.setdefault("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
     return response
 
 # Database will be initialized on startup; set SKIP_DB_INIT to skip.
@@ -87,8 +101,14 @@ app.include_router(
 
 
 @app.get("/metrics")
-def metrics() -> Response:
-    """Prometheus metrics endpoint."""
+def metrics(request: Request) -> Response:
+    """Prometheus metrics endpoint. Secured unless METRICS_PUBLIC=true."""
+    if not settings.metrics_public:
+        # Require API key auth; reuse verify_api_key dependency approach manually
+        auth_header = request.headers.get("Authorization")
+        expected = os.getenv("API_KEY", settings.api_key)
+        if not auth_header or not auth_header.startswith("Bearer ") or auth_header.split(" ", 1)[1] != expected:
+            raise HTTPException(status_code=401, detail="Unauthorized metrics access")
     data = generate_latest()
     return Response(content=data, media_type=CONTENT_TYPE_LATEST)
 
@@ -112,25 +132,55 @@ def root(request: Request):
 @app.get("/health")
 @limiter.limit("60/minute")
 def health_check(request: Request):
-    """Health check endpoint for monitoring"""
+    """Enhanced health check endpoint for monitoring"""
+    health_status = {
+        "status": "alive",
+        "timestamp": time.time(),
+        "probably": "overcaffeinated"
+    }
+    
+    # Check database connection
     try:
-        # Test database connection by opening/closing a session
         from app.database import SessionLocal
+        from app.models import CoffeeLog
         db = SessionLocal() if SessionLocal is not None else None
         if db is not None:
+            # Try a simple query to verify database is working
+            db.query(CoffeeLog).count()
             db.close()
-            db_status = "healthy"
+            health_status["database"] = {
+                "status": "healthy",
+                "type": "postgresql" if "postgresql" in os.getenv("DATABASE_URL", "") else "sqlite"
+            }
         else:
-            db_status = "not-initialized"
+            health_status["database"] = {"status": "not-initialized"}
     except Exception as e:
-        db_status = f"unhealthy: {str(e)}"
-
-    return {
-        "status": "alive",
-        "database": db_status,
-        "probably": "overcaffeinated",
-        "timestamp": time.time()
-    }
+        health_status["database"] = {
+            "status": "unhealthy",
+            "error": str(e)
+        }
+    
+    # Check Redis connection
+    try:
+        import redis
+        redis_url = os.getenv("REDIS_URL", "")
+        if redis_url.startswith("redis://"):
+            r = redis.from_url(redis_url)
+            r.ping()
+            health_status["redis"] = {"status": "healthy"}
+        else:
+            health_status["redis"] = {"status": "in-memory"}
+    except Exception as e:
+        health_status["redis"] = {
+            "status": "unhealthy",
+            "error": str(e)
+        }
+    
+    # Overall status
+    if health_status.get("database", {}).get("status") == "unhealthy":
+        health_status["status"] = "degraded"
+    
+    return health_status
 
 
 @app.get("/info")

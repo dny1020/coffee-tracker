@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 from datetime import datetime, timedelta, timezone
@@ -9,6 +9,8 @@ import statistics
 from app.database import get_db
 from app.models import HeartRateLog, CoffeeLog
 from app.metrics import HEARTRATE_LOGGED_TOTAL, HEARTRATE_GAUGE
+from app.limiter import limiter
+from app.settings import settings
 
 router = APIRouter()
 
@@ -16,8 +18,8 @@ router = APIRouter()
 
 
 class HeartRateCreate(BaseModel):
-    bpm: int = Field(..., ge=30, le=250,
-                     description="Heart rate in BPM (30-250)")
+    bpm: int = Field(..., ge=settings.min_heart_rate_bpm, le=settings.max_heart_rate_bpm,
+                     description=f"Heart rate in BPM ({settings.min_heart_rate_bpm}-{settings.max_heart_rate_bpm})")
     context: Optional[str] = Field(
         "resting", max_length=50, description="Context: resting, active, post-coffee, etc")
     notes: Optional[str] = Field(
@@ -26,12 +28,12 @@ class HeartRateCreate(BaseModel):
     @field_validator('bpm')
     @classmethod
     def validate_bpm(cls, v):
-        if v < 30:
+        if v < settings.min_heart_rate_bpm:
             raise ValueError(
-                'Heart rate below 30 BPM indicates you are probably dead')
-        if v > 250:
+                f'Heart rate below {settings.min_heart_rate_bpm} BPM indicates you are probably dead')
+        if v > settings.max_heart_rate_bpm:
             raise ValueError(
-                'Heart rate over 250 BPM is medically impossible for sustained periods')
+                f'Heart rate over {settings.max_heart_rate_bpm} BPM is medically impossible for sustained periods')
         return v
 
     @field_validator('context')
@@ -43,10 +45,20 @@ class HeartRateCreate(BaseModel):
             # Allow custom contexts but warn about standardized ones
             pass
         return v
+    
+    @field_validator('notes')
+    @classmethod
+    def validate_notes(cls, v):
+        if v is not None:
+            # Basic sanitization: strip leading/trailing whitespace
+            v = v.strip()
+            # Remove null bytes and other control characters
+            v = ''.join(char for char in v if ord(char) >= 32 or char in '\n\r\t')
+        return v if v else None
 
 
 class HeartRateUpdate(BaseModel):
-    bpm: Optional[int] = Field(None, ge=30, le=250)
+    bpm: Optional[int] = Field(None, ge=settings.min_heart_rate_bpm, le=settings.max_heart_rate_bpm)
     context: Optional[str] = Field(None, max_length=50)
     notes: Optional[str] = Field(None, max_length=1000)
 
@@ -54,12 +66,12 @@ class HeartRateUpdate(BaseModel):
     @classmethod
     def validate_bpm(cls, v):
         if v is not None:
-            if v < 30:
+            if v < settings.min_heart_rate_bpm:
                 raise ValueError(
-                    'Heart rate below 30 BPM indicates you are probably dead')
-            if v > 250:
+                    f'Heart rate below {settings.min_heart_rate_bpm} BPM indicates you are probably dead')
+            if v > settings.max_heart_rate_bpm:
                 raise ValueError(
-                    'Heart rate over 250 BPM is medically impossible')
+                    f'Heart rate over {settings.max_heart_rate_bpm} BPM is medically impossible')
         return v
 
 
@@ -75,7 +87,8 @@ class HeartRateResponse(BaseModel):
 
 
 @router.post("/", response_model=HeartRateResponse)
-def log_heartrate(heartrate: HeartRateCreate, db: Session = Depends(get_db)):
+@limiter.limit("200/hour")
+def log_heartrate(heartrate: HeartRateCreate, request: Request, db: Session = Depends(get_db)):
     """Log heart rate reading"""
     db_heartrate = HeartRateLog(**heartrate.dict())
     db.add(db_heartrate)
@@ -86,8 +99,8 @@ def log_heartrate(heartrate: HeartRateCreate, db: Session = Depends(get_db)):
         HEARTRATE_LOGGED_TOTAL.labels(
             context=(db_heartrate.context or "unknown")).inc()
         HEARTRATE_GAUGE.set(int(db_heartrate.bpm))
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"⚠️  Heartrate metrics error: {e}")
     return db_heartrate
 
 
@@ -131,8 +144,8 @@ def get_current_heartrate(db: Session = Depends(get_db)):
     }
     try:
         HEARTRATE_GAUGE.set(int(latest.bpm))
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"⚠️  Heartrate gauge error: {e}")
     return result
 
 
@@ -163,10 +176,14 @@ def get_heartrate_range(start: datetime, end: datetime, db: Session = Depends(ge
 
 
 @router.get("/", response_model=List[HeartRateResponse])
-def get_heartrate_logs(limit: int = Query(50, ge=1, le=1000), db: Session = Depends(get_db)):
-    """Get recent heart rate logs"""
+def get_heartrate_logs(
+    limit: int = Query(50, ge=1, le=1000, description="Number of records to return"),
+    offset: int = Query(0, ge=0, description="Number of records to skip"),
+    db: Session = Depends(get_db)
+):
+    """Get recent heart rate logs with pagination"""
     logs = db.query(HeartRateLog).order_by(
-        HeartRateLog.timestamp.desc()).limit(limit).all()
+        HeartRateLog.timestamp.desc()).limit(limit).offset(offset).all()
     return logs
 
 
@@ -324,7 +341,8 @@ def get_caffeine_correlation(hours_after: int = Query(2, ge=1, le=24), db: Sessi
 
 
 @router.put("/{heartrate_id}", response_model=HeartRateResponse)
-def update_heartrate(heartrate_id: int, heartrate: HeartRateUpdate, db: Session = Depends(get_db)):
+@limiter.limit("120/hour")
+def update_heartrate(heartrate_id: int, heartrate: HeartRateUpdate, request: Request, db: Session = Depends(get_db)):
     """Fix wrong heart rate entry"""
     db_heartrate = db.query(HeartRateLog).filter(
         HeartRateLog.id == heartrate_id).first()
@@ -340,7 +358,8 @@ def update_heartrate(heartrate_id: int, heartrate: HeartRateUpdate, db: Session 
 
 
 @router.delete("/{heartrate_id}")
-def delete_heartrate(heartrate_id: int, db: Session = Depends(get_db)):
+@limiter.limit("120/hour")
+def delete_heartrate(heartrate_id: int, request: Request, db: Session = Depends(get_db)):
     """Delete heart rate log"""
     db_heartrate = db.query(HeartRateLog).filter(
         HeartRateLog.id == heartrate_id).first()

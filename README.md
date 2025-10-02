@@ -11,37 +11,7 @@ Track your caffeine consumption and heart rate to quantify your addiction and wa
 - Rate limits your API abuse (because even APIs need boundaries)
 - Validates input so you can't log impossible vital signs
 
-## Project Structure
 
-```
-coffee-tracker/
-├── Dockerfile                 # Container build instructions
-├── docker-compose.yml         # Docker orchestration with Redis
-├── requirements.txt          # Python dependencies
-├── requirements-dev.txt      # Development dependencies
-├── Makefile                  # Development commands
-├── pytest.ini               # Test configuration
-├── .env.example              # Environment variables template
-├── .dockerignore            # Files excluded from Docker build
-├── .gitignore               # Files excluded from git
-├── README.md                # This file
-├── app/
-│   ├── __init__.py          # Python package marker
-│   ├── main.py              # FastAPI application with middleware
-│   ├── models.py            # SQLAlchemy models with timezone support
-│   ├── database.py          # Database connection and setup
-│   ├── auth.py              # API authentication
-│   └── routers/
-│       ├── __init__.py      # Router package marker
-│       ├── coffee.py        # Coffee tracking with validation
-│       └── heartrate.py     # Heart rate tracking with correlation
-├── tests/
-│   ├── __init__.py          # Test package marker
-│   ├── conftest.py          # Test configuration and fixtures
-│   ├── test_coffee.py       # Coffee endpoint tests
-│   └── test_heartrate.py    # Heart rate endpoint tests
-└── data/                    # SQLite database storage (created on first run)
-```
 
 ## Features
 
@@ -244,13 +214,14 @@ curl -H "Authorization: Bearer $API_KEY" \
 
 ## Database
 
-- **Type**: SQLite with timezone support
-- **Location**: `./data/coffee.db`
-- **Persistence**: Data survives container restarts
-- **Backup**: `make backup` creates timestamped backups
-- **Performance**: Indexed on timestamp and key fields
+- **Primary Type**: PostgreSQL (Docker container)
+- **Fallback / Dev Option**: SQLite (commented in `.env.example`)
+- **Postgres Connection**: `postgresql+psycopg2://coffee:coffee_password@postgres:5432/coffee_db`
+- **Persistence**: Docker volume `pg_data` (see `docker-compose.yml`)
+- **Backup**: Use `pg_dump` (add a script or Make target) or volume snapshot
+- **Performance**: Indexed via implicit PK + timestamp; consider adding composite indexes for analytics later
 
-### Database Schema
+### Database Schema (applies to both Postgres & SQLite)
 
 **coffee_logs table:**
 - `id` - Primary key

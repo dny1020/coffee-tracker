@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime, date, timezone
@@ -13,6 +13,8 @@ from app.metrics import (
     CAFFEINE_LAST_MG,
 )
 from app.models import CoffeeLog
+from app.limiter import limiter
+from app.settings import settings
 
 router = APIRouter()
 
@@ -20,8 +22,8 @@ router = APIRouter()
 
 
 class CoffeeCreate(BaseModel):
-    caffeine_mg: float = Field(..., ge=0, le=1000,
-                               description="Caffeine in mg (0-1000)")
+    caffeine_mg: float = Field(..., ge=0, le=settings.max_caffeine_mg,
+                               description=f"Caffeine in mg (0-{settings.max_caffeine_mg})")
     coffee_type: Optional[str] = Field(
         None, max_length=100, description="Type of coffee")
     notes: Optional[str] = Field(
@@ -32,8 +34,8 @@ class CoffeeCreate(BaseModel):
     def validate_caffeine(cls, v):
         if v < 0:
             raise ValueError('Caffeine amount cannot be negative')
-        if v > 1000:
-            raise ValueError('Caffeine amount over 1000mg is dangerous')
+        if v > settings.max_caffeine_mg:
+            raise ValueError(f'Caffeine amount over {settings.max_caffeine_mg}mg is dangerous')
         return v
 
     @field_validator('coffee_type')
@@ -42,10 +44,20 @@ class CoffeeCreate(BaseModel):
         if v is not None and len(v.strip()) == 0:
             return None
         return v
+    
+    @field_validator('notes')
+    @classmethod
+    def validate_notes(cls, v):
+        if v is not None:
+            # Basic sanitization: strip leading/trailing whitespace
+            v = v.strip()
+            # Remove null bytes and other control characters
+            v = ''.join(char for char in v if ord(char) >= 32 or char in '\n\r\t')
+        return v if v else None
 
 
 class CoffeeUpdate(BaseModel):
-    caffeine_mg: Optional[float] = Field(None, ge=0, le=1000)
+    caffeine_mg: Optional[float] = Field(None, ge=0, le=settings.max_caffeine_mg)
     coffee_type: Optional[str] = Field(None, max_length=100)
     notes: Optional[str] = Field(None, max_length=1000)
 
@@ -55,8 +67,8 @@ class CoffeeUpdate(BaseModel):
         if v is not None:
             if v < 0:
                 raise ValueError('Caffeine amount cannot be negative')
-            if v > 1000:
-                raise ValueError('Caffeine amount over 1000mg is dangerous')
+            if v > settings.max_caffeine_mg:
+                raise ValueError(f'Caffeine amount over {settings.max_caffeine_mg}mg is dangerous')
         return v
 
 
@@ -72,7 +84,8 @@ class CoffeeResponse(BaseModel):
 
 
 @router.post("/", response_model=CoffeeResponse)
-def log_coffee(coffee: CoffeeCreate, db: Session = Depends(get_db)):
+@limiter.limit("100/hour")
+def log_coffee(coffee: CoffeeCreate, request: Request, db: Session = Depends(get_db)):
     """Log coffee consumption"""
     db_coffee = CoffeeLog(**coffee.dict())
     db.add(db_coffee)
@@ -86,8 +99,8 @@ def log_coffee(coffee: CoffeeCreate, db: Session = Depends(get_db)):
         CAFFEINE_MG_TOTAL.inc(float(db_coffee.caffeine_mg))
         CAFFEINE_LAST_MG.set(float(db_coffee.caffeine_mg))
         COFFEE_LAST_TIMESTAMP_SECONDS.set(db_coffee.timestamp.timestamp())
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"⚠️  Coffee metrics error: {e}")
     return db_coffee
 
 
@@ -119,8 +132,8 @@ def get_today_caffeine(db: Session = Depends(get_db)):
         "date": today,
         "total_caffeine_mg": round(total, 2),
         "addiction_level": level,
-        "recommended_max": 400,
-        "over_limit": total > 400
+        "recommended_max": settings.recommended_daily_caffeine_mg,
+        "over_limit": total > settings.recommended_daily_caffeine_mg
     }
 
 
@@ -163,10 +176,14 @@ def get_week_caffeine(db: Session = Depends(get_db)):
 
 
 @router.get("/", response_model=List[CoffeeResponse])
-def get_coffee_logs(limit: int = Query(50, ge=1, le=1000), db: Session = Depends(get_db)):
-    """Get recent coffee logs"""
+def get_coffee_logs(
+    limit: int = Query(50, ge=1, le=1000, description="Number of records to return"),
+    offset: int = Query(0, ge=0, description="Number of records to skip"),
+    db: Session = Depends(get_db)
+):
+    """Get recent coffee logs with pagination"""
     logs = db.query(CoffeeLog).order_by(
-        CoffeeLog.timestamp.desc()).limit(limit).all()
+        CoffeeLog.timestamp.desc()).limit(limit).offset(offset).all()
     return logs
 
 
@@ -205,7 +222,8 @@ def get_most_common_coffee_type(logs):
 
 
 @router.put("/{coffee_id}", response_model=CoffeeResponse)
-def update_coffee(coffee_id: int, coffee: CoffeeUpdate, db: Session = Depends(get_db)):
+@limiter.limit("60/hour")
+def update_coffee(coffee_id: int, coffee: CoffeeUpdate, request: Request, db: Session = Depends(get_db)):
     """Fix wrong caffeine entry"""
     db_coffee = db.query(CoffeeLog).filter(CoffeeLog.id == coffee_id).first()
     if not db_coffee:
@@ -220,7 +238,8 @@ def update_coffee(coffee_id: int, coffee: CoffeeUpdate, db: Session = Depends(ge
 
 
 @router.delete("/{coffee_id}")
-def delete_coffee(coffee_id: int, db: Session = Depends(get_db)):
+@limiter.limit("60/hour")
+def delete_coffee(coffee_id: int, request: Request, db: Session = Depends(get_db)):
     """Delete coffee log (for when you lied about consumption)"""
     db_coffee = db.query(CoffeeLog).filter(CoffeeLog.id == coffee_id).first()
     if not db_coffee:

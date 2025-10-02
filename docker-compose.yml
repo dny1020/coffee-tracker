@@ -1,24 +1,19 @@
 services:
-  coffee-tracker:
-    build: .
-    container_name: coffee-tracker
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./data:/app/data
+  postgres:
+    image: postgres:15-alpine
+    container_name: coffee-tracker-postgres
     environment:
-      - DATABASE_URL=sqlite:///data/coffee.db
-      - PYTHONPATH=/app
-      - REDIS_URL=redis://redis:6379/0
-    restart: unless-stopped
-    depends_on:
-      - redis
+      - POSTGRES_USER=${POSTGRES_USER:-coffee}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-coffee_password}
+      - POSTGRES_DB=${POSTGRES_DB:-coffee_db}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: [ "CMD", "pg_isready", "-U", "${POSTGRES_USER:-coffee}" ]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 40s
+      retries: 5
+    restart: unless-stopped
 
   redis:
     image: redis:7-alpine
@@ -30,10 +25,35 @@ services:
       - redis_data:/data
     command: redis-server --appendonly yes
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 30s
       timeout: 10s
       retries: 3
 
+  coffee-tracker:
+    build: .
+    container_name: coffee-tracker
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+psycopg2://${POSTGRES_USER:-coffee}:${POSTGRES_PASSWORD:-coffee_password}@postgres:5432/${POSTGRES_DB:-coffee_db}
+      - PYTHONPATH=/app
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 50s
+
 volumes:
   redis_data:
+  pg_data:
