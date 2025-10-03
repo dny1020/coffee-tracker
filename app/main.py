@@ -4,6 +4,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+from contextlib import asynccontextmanager
 import time
 import os
 import logging
@@ -30,12 +31,38 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan event handler for startup and shutdown."""
+    # Startup
+    logger.info("☕ Coffee Tracker API starting up...")
+    logger.info(f"📊 Database: {os.getenv('DATABASE_URL', 'sqlite:///data/coffee.db')}")
+    logger.info(f"🔐 Authentication: {'Enabled' if os.getenv('API_KEY') else 'Default key'}")
+    logger.info(f"📝 Log level: {settings.log_level.upper()}")
+    logger.info("🚀 Ready to track your caffeine addiction!")
+    if not os.getenv("SKIP_DB_INIT"):
+        try:
+            from app.database import init_db as _init_db
+            _init_db()
+            logger.info("✅ Database initialized successfully")
+        except Exception as e:
+            logger.warning(f"DB init skipped/failed: {e}", exc_info=True)
+    
+    yield  # Application runs here
+    
+    # Shutdown
+    logger.info("💤 Coffee Tracker API shutting down...")
+    logger.info("☕ Hope you enjoyed tracking your addiction!")
+
+
 app = FastAPI(
     title="Coffee Tracker API",
     version="1.0.0",
     description="Track your caffeine addiction and cardiovascular deterioration with scientific precision",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    lifespan=lifespan
 )
 
 # Add rate limiting middleware
@@ -241,27 +268,3 @@ def api_info(request: Request):
             }
         }
     }
-
-# Add startup event for logging
-
-
-@app.on_event("startup")
-async def startup_event():
-    logger.info("☕ Coffee Tracker API starting up...")
-    logger.info(f"📊 Database: {os.getenv('DATABASE_URL', 'sqlite:///data/coffee.db')}")
-    logger.info(f"🔐 Authentication: {'Enabled' if os.getenv('API_KEY') else 'Default key'}")
-    logger.info(f"📝 Log level: {settings.log_level.upper()}")
-    logger.info("🚀 Ready to track your caffeine addiction!")
-    if not os.getenv("SKIP_DB_INIT"):
-        try:
-            from app.database import init_db as _init_db
-            _init_db()
-            logger.info("✅ Database initialized successfully")
-        except Exception as e:
-            logger.warning(f"DB init skipped/failed: {e}", exc_info=True)
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    logger.info("💤 Coffee Tracker API shutting down...")
-    logger.info("☕ Hope you enjoyed tracking your addiction!")
