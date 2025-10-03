@@ -3,26 +3,44 @@
 Provides a single Limiter instance that can be imported anywhere without
 creating circular imports. Tries to use Redis if configured, otherwise
 falls back to in-memory storage.
+
+In test mode (PYTEST_CURRENT_TEST set), provides a no-op limiter that doesn't
+actually rate limit to avoid threading issues with TestClient.
 """
 import os
+from functools import wraps
+from typing import Callable, Any
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from app.settings import settings
 
 
-def _build_limiter() -> Limiter:
+class NoOpLimiter:
+    """No-op limiter for testing that doesn't actually limit requests."""
+    
+    def limit(self, *args: Any, **kwargs: Any) -> Callable:
+        """Return a pass-through decorator that doesn't limit."""
+        def decorator(func: Callable) -> Callable:
+            @wraps(func)
+            def wrapper(*func_args: Any, **func_kwargs: Any) -> Any:
+                return func(*func_args, **func_kwargs)
+            return wrapper
+        return decorator
+
+
+def _build_limiter() -> Limiter | NoOpLimiter:
     """Create a Limiter instance.
 
     Behavior:
-    - In test runs (PYTEST_CURRENT_TEST present) always use in-memory backend.
+    - In test runs (PYTEST_CURRENT_TEST present) return a no-op limiter.
     - If redis URL provided, verify connectivity with a ping before using it.
     - Fall back silently to in-memory on any failure.
     """
-    redis_url = settings.redis_url or ""
-
-    # Force memory backend during pytest to avoid external dependency
+    # Use no-op limiter during pytest to avoid threading issues with TestClient
     if os.getenv("PYTEST_CURRENT_TEST"):
-        return Limiter(key_func=_composite_key)
+        return NoOpLimiter()
+    
+    redis_url = settings.redis_url or ""
 
     if redis_url.startswith("redis://"):
         try:

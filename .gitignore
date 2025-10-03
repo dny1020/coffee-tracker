@@ -63,3 +63,17 @@ logs/
 *.tmp
 *.temp
 .cache/
+
+# Production environment files
+.env.production
+.env.staging
+.env.*.local
+
+# Backups
+backups/
+*.sql
+*.backup
+
+# Docker override files
+docker-compose.override.yml
+docker-compose.*.local.yml
