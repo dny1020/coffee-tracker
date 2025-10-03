@@ -22,10 +22,10 @@ build: ## Build the containers
 	docker-compose build
 
 test: ## Run tests locally (requires Python environment)
-	pytest tests/ -v
+	pytest tests/ -v --cov=app --cov-report=html --cov-report=term
 
 test-docker: ## Run tests in Docker container
-	docker-compose exec coffee-tracker pytest tests/ -v
+	docker-compose exec coffee-tracker pytest tests/ -v --cov=app --cov-report=term
 
 test-watch: ## Run tests in watch mode
 	pytest-watch tests/

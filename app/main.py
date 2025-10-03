@@ -6,6 +6,8 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 import time
 import os
+import logging
+import sys
 
 # Import database lazily inside functions to avoid SQLAlchemy import at module import time under Python 3.13
 from app.metrics import observe_request
@@ -17,6 +19,16 @@ from app.settings import settings
 from app.limiter import limiter
 
 """Application instance and middleware wiring."""
+
+# Configure logging
+logging.basicConfig(
+    level=getattr(logging, settings.log_level.upper()),
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Coffee Tracker API",
@@ -63,14 +75,23 @@ async def security_and_logging_middleware(request: Request, call_next):
     response = await call_next(request)
     duration = time.time() - start
 
-    # Basic structured line log
-    print(f"request_id={request_id} method={request.method} path={request.url.path} status={response.status_code} duration_ms={duration*1000:.1f}")
+    # Structured logging
+    logger.info(
+        "Request processed",
+        extra={
+            "request_id": request_id,
+            "method": request.method,
+            "path": request.url.path,
+            "status_code": response.status_code,
+            "duration_ms": round(duration * 1000, 1)
+        }
+    )
 
     # Metrics
     try:
         observe_request(request.method, request.url.path, response.status_code, duration)
     except Exception as e:
-        print(f"⚠️  Metrics error: {e}")
+        logger.error(f"Metrics error: {e}", exc_info=True)
 
     # Add headers
     response.headers["X-Request-ID"] = request_id
@@ -155,6 +176,7 @@ def health_check(request: Request):
         else:
             health_status["database"] = {"status": "not-initialized"}
     except Exception as e:
+        logger.error(f"Database health check failed: {e}", exc_info=True)
         health_status["database"] = {
             "status": "unhealthy",
             "error": str(e)
@@ -171,6 +193,7 @@ def health_check(request: Request):
         else:
             health_status["redis"] = {"status": "in-memory"}
     except Exception as e:
+        logger.error(f"Redis health check failed: {e}", exc_info=True)
         health_status["redis"] = {
             "status": "unhealthy",
             "error": str(e)
@@ -224,21 +247,21 @@ def api_info(request: Request):
 
 @app.on_event("startup")
 async def startup_event():
-    print("☕ Coffee Tracker API starting up...")
-    print(
-        f"📊 Database: {os.getenv('DATABASE_URL', 'sqlite:///data/coffee.db')}")
-    print(
-        f"🔐 Authentication: {'Enabled' if os.getenv('API_KEY') else 'Default key'}")
-    print("🚀 Ready to track your caffeine addiction!")
+    logger.info("☕ Coffee Tracker API starting up...")
+    logger.info(f"📊 Database: {os.getenv('DATABASE_URL', 'sqlite:///data/coffee.db')}")
+    logger.info(f"🔐 Authentication: {'Enabled' if os.getenv('API_KEY') else 'Default key'}")
+    logger.info(f"📝 Log level: {settings.log_level.upper()}")
+    logger.info("🚀 Ready to track your caffeine addiction!")
     if not os.getenv("SKIP_DB_INIT"):
         try:
             from app.database import init_db as _init_db
             _init_db()
+            logger.info("✅ Database initialized successfully")
         except Exception as e:
-            print(f"⚠️  DB init skipped/failed: {e}")
+            logger.warning(f"DB init skipped/failed: {e}", exc_info=True)
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    print("💤 Coffee Tracker API shutting down...")
-    print("☕ Hope you enjoyed tracking your addiction!")
+    logger.info("💤 Coffee Tracker API shutting down...")
+    logger.info("☕ Hope you enjoyed tracking your addiction!")

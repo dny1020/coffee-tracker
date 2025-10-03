@@ -22,7 +22,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Install dependencies
         run: |
@@ -85,19 +85,20 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     if: github.ref == 'refs/heads/develop'
-    environment: staging
+    # environment: staging  # Uncomment after creating GitHub environment in Settings → Environments
 
     steps:
       - name: Deploy to staging
         run: |
           echo "Deploying to staging environment..."
           echo "Image digest: ${{ needs.build.outputs.image-digest }}"
+          echo "⚠️  TODO: Implement actual deployment (kubectl, docker-compose, etc.)"
 
   deploy-production:
     runs-on: ubuntu-latest
     needs: build
     if: github.ref == 'refs/heads/main'
-    environment: production
+    # environment: production  # Uncomment after creating GitHub environment in Settings → Environments
 
     steps:
       - name: Deploy to production
@@ -106,6 +107,8 @@ jobs:
         run: |
           echo "Deploying to production environment..."
           echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          echo "⚠️  TODO: Implement actual deployment (kubectl, docker-compose, etc.)"
+          echo "⚠️  TODO: Add post-deployment health checks"
 
   notify:
     runs-on: ubuntu-latest

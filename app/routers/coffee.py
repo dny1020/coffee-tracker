@@ -4,6 +4,7 @@ from sqlalchemy import func
 from datetime import datetime, date, timezone
 from typing import List, Optional
 from pydantic import BaseModel, Field, field_validator
+import logging
 
 from app.database import get_db
 from app.metrics import (
@@ -17,13 +18,14 @@ from app.limiter import limiter
 from app.settings import settings
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 # Pydantic models with validation
 
 
 class CoffeeCreate(BaseModel):
-    caffeine_mg: float = Field(..., ge=0, le=settings.max_caffeine_mg,
-                               description=f"Caffeine in mg (0-{settings.max_caffeine_mg})")
+    caffeine_mg: float = Field(..., ge=0, le=1000,
+                               description="Caffeine in mg (0-1000)")
     coffee_type: Optional[str] = Field(
         None, max_length=100, description="Type of coffee")
     notes: Optional[str] = Field(
@@ -57,7 +59,7 @@ class CoffeeCreate(BaseModel):
 
 
 class CoffeeUpdate(BaseModel):
-    caffeine_mg: Optional[float] = Field(None, ge=0, le=settings.max_caffeine_mg)
+    caffeine_mg: Optional[float] = Field(None, ge=0, le=1000)
     coffee_type: Optional[str] = Field(None, max_length=100)
     notes: Optional[str] = Field(None, max_length=1000)
 
@@ -100,7 +102,7 @@ def log_coffee(coffee: CoffeeCreate, request: Request, db: Session = Depends(get
         CAFFEINE_LAST_MG.set(float(db_coffee.caffeine_mg))
         COFFEE_LAST_TIMESTAMP_SECONDS.set(db_coffee.timestamp.timestamp())
     except Exception as e:
-        print(f"⚠️  Coffee metrics error: {e}")
+        logger.error(f"Coffee metrics error: {e}", exc_info=True)
     return db_coffee
 
 

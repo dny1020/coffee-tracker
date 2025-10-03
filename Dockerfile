@@ -20,8 +20,17 @@ COPY .env.example ./
 # Copy pytest.ini only if exists (handled at build context level)
 COPY pytest.ini ./pytest.ini
 
+# Create non-root user for security
+RUN addgroup -g 1000 appuser && \
+    adduser -D -u 1000 -G appuser appuser
+
 # Create data directory with proper permissions
-RUN mkdir -p /app/data && chmod 755 /app/data
+RUN mkdir -p /app/data && \
+    chown -R appuser:appuser /app && \
+    chmod 755 /app/data
+
+# Switch to non-root user
+USER appuser
 
 # Expose port
 EXPOSE 8000

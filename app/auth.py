@@ -4,6 +4,7 @@ import os
 import hashlib
 import hmac
 from dotenv import load_dotenv
+from starlette.status import HTTP_401_UNAUTHORIZED
 
 load_dotenv()
 

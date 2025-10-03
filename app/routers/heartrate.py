@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 from pydantic import BaseModel, Field, field_validator
 import statistics
+import logging
 
 from app.database import get_db
 from app.models import HeartRateLog, CoffeeLog
@@ -13,13 +14,14 @@ from app.limiter import limiter
 from app.settings import settings
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 # Pydantic models with validation
 
 
 class HeartRateCreate(BaseModel):
-    bpm: int = Field(..., ge=settings.min_heart_rate_bpm, le=settings.max_heart_rate_bpm,
-                     description=f"Heart rate in BPM ({settings.min_heart_rate_bpm}-{settings.max_heart_rate_bpm})")
+    bpm: int = Field(..., ge=30, le=250,
+                     description="Heart rate in BPM (30-250)")
     context: Optional[str] = Field(
         "resting", max_length=50, description="Context: resting, active, post-coffee, etc")
     notes: Optional[str] = Field(
@@ -58,7 +60,7 @@ class HeartRateCreate(BaseModel):
 
 
 class HeartRateUpdate(BaseModel):
-    bpm: Optional[int] = Field(None, ge=settings.min_heart_rate_bpm, le=settings.max_heart_rate_bpm)
+    bpm: Optional[int] = Field(None, ge=30, le=250)
     context: Optional[str] = Field(None, max_length=50)
     notes: Optional[str] = Field(None, max_length=1000)
 
@@ -100,7 +102,7 @@ def log_heartrate(heartrate: HeartRateCreate, request: Request, db: Session = De
             context=(db_heartrate.context or "unknown")).inc()
         HEARTRATE_GAUGE.set(int(db_heartrate.bpm))
     except Exception as e:
-        print(f"⚠️  Heartrate metrics error: {e}")
+        logger.error(f"Heartrate metrics error: {e}", exc_info=True)
     return db_heartrate
 
 
@@ -145,7 +147,7 @@ def get_current_heartrate(db: Session = Depends(get_db)):
     try:
         HEARTRATE_GAUGE.set(int(latest.bpm))
     except Exception as e:
-        print(f"⚠️  Heartrate gauge error: {e}")
+        logger.error(f"Heartrate gauge error: {e}", exc_info=True)
     return result
 
 

@@ -48,6 +48,13 @@ Thumbs.db
 # Docker
 .dockerignore
 
+# Test coverage
+.pytest_cache/
+.coverage
+htmlcov/
+*.cover
+.hypothesis/
+
 # Logs
 *.log
 logs/
