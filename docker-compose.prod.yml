@@ -18,15 +18,17 @@ services:
       - POSTGRES_USER=${POSTGRES_USER:-coffee}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}  # REQUIRED: Set in .env or environment
       - POSTGRES_DB=${POSTGRES_DB:-coffee_db}
+      - PGDATA=/var/lib/postgresql/data/pgdata
     volumes:
       - pg_data:/var/lib/postgresql/data
     networks:
       - internal
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U coffee -d coffee_db"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-coffee} -d ${POSTGRES_DB:-coffee_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     restart: unless-stopped
     deploy:
       resources:

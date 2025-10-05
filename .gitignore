@@ -114,6 +114,7 @@ dmypy.json
 backups/
 *.sql
 *.backup
+*.dump
 
 # Docker override files
 docker-compose.override.yml
@@ -149,6 +150,14 @@ celerybeat.pid
 docs/_build/
 site/
 
+# Temporary documentation files
+*-FIXES.md
+*-CHANGES.md
+*-SETUP.md
+DEPLOYMENT-*.md
+PROMETHEUS-*.md
+README-*.md
+
 # Package manager
 Pipfile.lock
 poetry.lock
@@ -169,3 +178,5 @@ docker-compose.*.local.yml
 # Editor directories and files
 .nova/
 .vs/
+FINAL_SUMMARY.md
+COMMIT_MESSAGE.txt

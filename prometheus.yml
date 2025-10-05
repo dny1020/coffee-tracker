@@ -42,12 +42,11 @@ scrape_configs:
           service: 'coffee-tracker'
           app: 'fastapi'
           environment: 'production'
-    # Optional: Add authentication if metrics endpoint requires it
-    # bearer_token: 'your-api-key-here'
-    # Or use basic auth:
-    # basic_auth:
-    #   username: 'prometheus'
-    #   password: 'your-password'
+    # Authentication for metrics endpoint
+    # Uncomment and set your API_KEY if METRICS_PUBLIC=false
+    # authorization:
+    #   type: Bearer
+    #   credentials: 'your-api-key-here'
 
   # PostgreSQL exporter (optional - requires postgres_exporter)
   # - job_name: 'postgres'

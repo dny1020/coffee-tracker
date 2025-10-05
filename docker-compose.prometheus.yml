@@ -26,10 +26,19 @@ services:
     ports:
       - "9090:9090"
     networks:
-      - internal
       - monitoring
-    depends_on:
-      - coffee-tracker
+      - traefik_net
+      - internal
+    
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_net"
+      - "traefik.http.routers.prometheus.rule=Host(`prometheus.danilocloud.me`)"
+      - "traefik.http.routers.prometheus.entrypoints=websecure"
+      - "traefik.http.routers.prometheus.tls=true"
+      - "traefik.http.routers.prometheus.tls.certresolver=myresolver"
+      - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
+    
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:9090/-/healthy"]
       interval: 30s
@@ -62,6 +71,17 @@ services:
       - "3000:3000"
     networks:
       - monitoring
+      - traefik_net
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_net"
+      - "traefik.http.routers.grafana.rule=Host(`grafana.danilocloud.me`)"
+      - "traefik.http.routers.grafana.entrypoints=websecure"
+      - "traefik.http.routers.grafana.tls=true"
+      - "traefik.http.routers.grafana.tls.certresolver=myresolver"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+
     depends_on:
       - prometheus
     healthcheck:
@@ -87,5 +107,8 @@ volumes:
 networks:
   monitoring:
     driver: bridge
-  internal:
+  traefik_net:
     external: true
+  internal:
+    external: false
+    name: coffee-tracker_internal

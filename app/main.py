@@ -81,11 +81,14 @@ app.add_middleware(
 )
 
 # Trusted host middleware for security
+# Note: Traefik/reverse proxy needs to be in allowed hosts
 app.add_middleware(
     TrustedHostMiddleware,
     allowed_hosts=settings.parsed_allowed_hosts() + [
         # Legacy / additional hosts that may still be used in deployment
-        "testserver", "*.coffee-tracker.local"
+        "testserver", "*.coffee-tracker.local",
+        # Docker internal networking
+        "coffee-tracker", "coffee-tracker:8000"
     ]
 )
 

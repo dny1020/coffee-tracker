@@ -2,51 +2,515 @@
 
 ## Quick Start
 
-Log coffee and heart rate data to your API using Apple Shortcuts on iPhone/iPad/Mac.
+Log coffee and heart rate data to your Coffee Tracker API using Apple Shortcuts on iPhone/iPad/Mac.
+
+---
+
+## Table of Contents
+
+1. [Prerequisites](#prerequisites)
+2. [Method 1: Simple Setup (Recommended)](#method-1-simple-setup-recommended)
+3. [Method 2: Advanced Setup with Variables](#method-2-advanced-setup-with-variables)
+4. [Testing Your Shortcuts](#testing-your-shortcuts)
+5. [Troubleshooting](#troubleshooting)
 
 ---
 
 ## Prerequisites
 
+### What You Need:
+
 1. **Your API Information**:
-   - URL: `https://coffee.danilocloud.me`
-   - API Key: Your secure API key from `.env` file
+   - **Base URL**: `https://coffee.danilocloud.me` (or your custom domain)
+   - **API Key**: From your `.env` file (look for `API_KEY=...`)
 
 2. **Apple Shortcuts App**:
-   - Pre-installed on iOS/iPadOS/macOS
-   - Open "Shortcuts" app
+   - Pre-installed on iOS 13+, iPadOS 13+, macOS 12+
+   - If deleted, download from App Store
+
+3. **Network Access**:
+   - iPhone/iPad/Mac must have internet connection
+   - API must be accessible from your device
 
 ---
 
-## 🚀 Quick Setup (Copy-Paste Method)
+## Method 1: Simple Setup (Recommended)
 
-### Step 1: Save Your API Key
+This method is the easiest and works great for most users.
 
-Create a shortcut to store your API key securely:
+### ☕ Log Coffee Shortcut
 
-1. Open Shortcuts app
-2. Tap **"+"** to create new shortcut
-3. Add action: **"Text"**
-4. Enter your API key (from `.env` file)
-5. Add action: **"Set Variable"**
-6. Name it: `API_KEY`
-7. Name shortcut: **"Get Coffee API Key"**
-8. Save
+#### Step-by-Step Instructions:
+
+1. **Open Shortcuts App** on your iPhone/iPad/Mac
+
+2. **Create New Shortcut**:
+   - Tap **"+"** button (top right)
+   - Or tap **"Create Shortcut"**
+
+3. **Add "Get Contents of URL" Action**:
+   - Tap **"Add Action"**
+   - Search for **"Get Contents of URL"**
+   - Tap to add it
+
+4. **Configure the Request**:
+   - **URL**: `https://coffee.danilocloud.me/coffee/`
+   - Tap **"Show More"** to expand options
+   - **Method**: `POST`
+   - **Headers**:
+     - Add header: `Authorization` = `Bearer YOUR_API_KEY_HERE`
+       (Replace `YOUR_API_KEY_HERE` with your actual API key from .env)
+     - Add header: `Content-Type` = `application/json`
+   - **Request Body**: `JSON`
+   - **JSON**:
+     ```json
+     {
+       "caffeine_mg": 120,
+       "coffee_type": "espresso",
+       "notes": "Morning coffee"
+     }
+     ```
+
+5. **Add "Show Result" Action** (optional):
+   - Search for **"Show Result"**
+   - This will display the API response
+
+6. **Name Your Shortcut**:
+   - Tap the shortcut name at top
+   - Rename to **"Log Coffee"**
+
+7. **Save**: Tap **"Done"**
+
+#### Making It Interactive:
+
+To ask for caffeine amount each time:
+
+1. **Before** the "Get Contents of URL" action, add:
+   - Action: **"Ask for Input"**
+   - Prompt: `"How much caffeine (mg)?"`
+   - Input Type: `Number`
+   - Default Answer: `95`
+
+2. **Update JSON** in "Get Contents of URL":
+   ```json
+   {
+     "caffeine_mg": [Provided Input],
+     "coffee_type": "coffee",
+     "notes": "Logged via Shortcuts"
+   }
+   ```
+   
+   Note: Tap inside the JSON and select "Provided Input" variable from the variables menu
 
 ---
 
-## ☕ Log Coffee Shortcut
+### ❤️ Log Heart Rate Shortcut
 
-### Shortcut Steps:
+#### Step-by-Step Instructions:
 
-**Name**: Log Coffee
+1. **Create New Shortcut** (same as above)
+
+2. **Add "Get Contents of URL" Action**:
+   - **URL**: `https://coffee.danilocloud.me/heartrate/`
+   - **Method**: `POST`
+   - **Headers**:
+     - `Authorization`: `Bearer YOUR_API_KEY_HERE`
+     - `Content-Type`: `application/json`
+   - **Request Body**: `JSON`
+   - **JSON**:
+     ```json
+     {
+       "bpm": 75,
+       "context": "resting",
+       "notes": "Logged via Shortcuts"
+     }
+     ```
+
+3. **Add "Show Result" Action**
+
+4. **Name**: **"Log Heart Rate"**
+
+#### Making It Interactive:
+
+Add before the URL action:
+
+1. **Ask for Input**:
+   - Prompt: `"What's your heart rate (BPM)?"`
+   - Input Type: `Number`
+   - Default: `75`
+
+2. **Update JSON**:
+   ```json
+   {
+     "bpm": [Provided Input],
+     "context": "manual",
+     "notes": "Logged via Shortcuts"
+   }
+   ```
+
+---
+
+## Method 2: Advanced Setup with Variables
+
+This method stores your API key in one place for reuse across multiple shortcuts.
+
+### Step 1: Create API Configuration Shortcut
+
+1. **Create New Shortcut**
+
+2. **Add "Dictionary" Action**:
+   - Search for "Dictionary"
+   - Configure:
+     ```
+     API_KEY: YOUR_API_KEY_HERE
+     BASE_URL: https://coffee.danilocloud.me
+     ```
+
+3. **Name**: **"Coffee API Config"**
+
+### Step 2: Create Log Coffee Shortcut (Advanced)
+
+1. **Create New Shortcut**
+
+2. **Get API Config**:
+   - Add action: **"Run Shortcut"**
+   - Select: **"Coffee API Config"**
+   - Add action: **"Get Dictionary Value"**
+   - Key: `API_KEY`
+   - Add action: **"Set Variable"** → `api_key`
+
+3. **Ask for Input**:
+   - Prompt: `"How much caffeine (mg)?"`
+   - Type: `Number`
+   - Default: `95`
+   - Set variable: `caffeine_amount`
+
+4. **Ask for Coffee Type**:
+   - Prompt: `"Coffee type?"`
+   - Type: `Text`
+   - Default: `"coffee"`
+   - Set variable: `coffee_type`
+
+5. **Get Contents of URL**:
+   - URL: `https://coffee.danilocloud.me/coffee/`
+   - Method: `POST`
+   - Headers:
+     - `Authorization`: `Bearer [api_key]`
+     - `Content-Type`: `application/json`
+   - Request Body: `JSON`
+   - JSON:
+     ```json
+     {
+       "caffeine_mg": [caffeine_amount],
+       "coffee_type": [coffee_type],
+       "notes": "Logged via Shortcuts"
+     }
+     ```
+
+6. **Show Result**
+
+7. **Name**: **"Log Coffee Advanced"**
+
+---
+
+## Testing Your Shortcuts
+
+### Test 1: Basic Connectivity
+
+Create a simple test shortcut:
+
+1. Add "Get Contents of URL":
+   - URL: `https://coffee.danilocloud.me/health`
+   - Method: `GET`
+2. Add "Show Result"
+3. Run it
+
+**Expected Result**: Should show JSON with `"status": "alive"`
+
+### Test 2: Authentication
+
+1. Add "Get Contents of URL":
+   - URL: `https://coffee.danilocloud.me/coffee/today`
+   - Method: `GET`
+   - Headers: `Authorization`: `Bearer YOUR_API_KEY`
+2. Add "Show Result"
+3. Run it
+
+**Expected Result**: Should show today's caffeine data or empty result
+
+### Test 3: Post Data
+
+Use your "Log Coffee" shortcut:
+
+1. Run the shortcut
+2. Enter caffeine amount (e.g., 120)
+3. Check response
+
+**Expected Success Response**:
+```json
+{
+  "id": 123,
+  "caffeine_mg": 120.0,
+  "coffee_type": "coffee",
+  "timestamp": "2024-10-05T10:30:00Z",
+  "notes": "Logged via Shortcuts"
+}
+```
+
+**Common Error Responses**:
+
+- **401 Unauthorized**: Wrong API key
+- **422 Validation Error**: Invalid caffeine amount (must be 0-1000)
+- **500 Server Error**: Check API health
+
+---
+
+## Troubleshooting
+
+### Issue: "The operation couldn't be completed"
+
+**Cause**: Network connectivity or URL issue
+
+**Fix**:
+1. Check internet connection
+2. Verify URL is correct: `https://coffee.danilocloud.me`
+3. Try accessing URL in Safari first
+
+### Issue: "401 Unauthorized"
+
+**Cause**: Invalid or missing API key
+
+**Fix**:
+1. Check your `.env` file for the correct API key
+2. Ensure header is exactly: `Authorization: Bearer YOUR_KEY`
+   - Must have space between "Bearer" and the key
+   - No extra quotes
+3. Test with curl:
+   ```bash
+   curl -H "Authorization: Bearer YOUR_KEY" \
+        https://coffee.danilocloud.me/coffee/today
+   ```
+
+### Issue: "422 Validation Error"
+
+**Cause**: Data validation failed
+
+**Fix**:
+
+For **Coffee endpoint**:
+- `caffeine_mg` must be 0-1000
+- `coffee_type` max 100 characters
+- `notes` max 1000 characters
+
+For **Heart Rate endpoint**:
+- `bpm` must be 30-250
+- `context` max 50 characters
+- `notes` max 1000 characters
+
+### Issue: Response shows database error
+
+**Cause**: API database issue
+
+**Fix**:
+1. Check API health: `https://coffee.danilocloud.me/health`
+2. Contact server administrator
+3. See [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)
+
+### Issue: Shortcut times out
+
+**Cause**: Slow network or API down
+
+**Fix**:
+1. Check if API is up: `https://coffee.danilocloud.me/health`
+2. Try again with better connection
+3. Increase timeout in "Get Contents of URL" advanced settings
+
+---
+
+## Example Shortcuts
+
+### Quick Coffee Logger (Minimal)
 
 **Actions**:
+1. Get Contents of URL
+   - URL: `https://coffee.danilocloud.me/coffee/`
+   - Method: POST
+   - Headers: `Authorization: Bearer YOUR_KEY`, `Content-Type: application/json`
+   - Body: `{"caffeine_mg": 95, "coffee_type": "coffee"}`
+
+### Coffee with Apple Watch Integration
+
+**Actions**:
+1. Get current date/time → Set variable `timestamp`
+2. Ask for number: "Caffeine (mg)?"
+3. Get Contents of URL (same as above, with input)
+4. Show notification: "Coffee logged!"
+
+### Heart Rate from Health App
+
+**Actions**:
+1. Get "Heart Rate" samples from Health
+   - Latest sample
+2. Get value from health sample
+3. Set variable: `heart_rate`
+4. Get Contents of URL:
+   - URL: `https://coffee.danilocloud.me/heartrate/`
+   - Method: POST
+   - Headers: Auth + Content-Type
+   - Body: `{"bpm": [heart_rate], "context": "health-app"}`
+5. Show notification: "Heart rate logged!"
+
+---
+
+## API Endpoints Reference
+
+### POST /coffee/
+
+Log coffee consumption.
+
+**Required Headers**:
+- `Authorization: Bearer YOUR_API_KEY`
+- `Content-Type: application/json`
+
+**Request Body**:
+```json
+{
+  "caffeine_mg": 120,          // Required: 0-1000
+  "coffee_type": "espresso",   // Optional: max 100 chars
+  "notes": "Morning coffee"    // Optional: max 1000 chars
+}
 ```
-1. Ask for Input
-   - Prompt: "How much caffeine (mg)?"
-   - Type: Number
-   - Default: 95
+
+**Response**:
+```json
+{
+  "id": 123,
+  "caffeine_mg": 120.0,
+  "coffee_type": "espresso",
+  "timestamp": "2024-10-05T10:30:00Z",
+  "notes": "Morning coffee"
+}
+```
+
+### POST /heartrate/
+
+Log heart rate reading.
+
+**Required Headers**:
+- `Authorization: Bearer YOUR_API_KEY`
+- `Content-Type: application/json`
+
+**Request Body**:
+```json
+{
+  "bpm": 75,                   // Required: 30-250
+  "context": "resting",        // Optional: max 50 chars
+  "notes": "After coffee"      // Optional: max 1000 chars
+}
+```
+
+**Response**:
+```json
+{
+  "id": 456,
+  "bpm": 75,
+  "context": "resting",
+  "timestamp": "2024-10-05T10:35:00Z",
+  "notes": "After coffee"
+}
+```
+
+### GET /coffee/today
+
+Get today's total caffeine.
+
+**Response**:
+```json
+{
+  "date": "2024-10-05",
+  "total_caffeine_mg": 285.0,
+  "addiction_level": "moderate addict",
+  "recommended_max": 400,
+  "over_limit": false
+}
+```
+
+### GET /heartrate/current
+
+Get latest heart rate reading.
+
+**Response**:
+```json
+{
+  "bpm": 75,
+  "context": "resting",
+  "timestamp": "2024-10-05T10:35:00Z",
+  "minutes_ago": 5
+}
+```
+
+---
+
+## Security Best Practices
+
+1. **Never share your API key** in screenshots or public shortcuts
+2. **Use HTTPS** - Never use `http://`
+3. **Rotate keys regularly** - Update API_KEY in .env and shortcuts
+4. **Test in private** - Don't share shortcuts with embedded API keys
+5. **Use Shortcut Privacy** - Mark shortcuts as private in iCloud
+
+---
+
+## Advanced: Automation Ideas
+
+### Morning Coffee Routine
+
+**Trigger**: Time of day (7:00 AM)
+**Actions**:
+1. Show notification: "Time for coffee?"
+2. Wait for user confirmation
+3. Run "Log Coffee" shortcut
+
+### Automatic Heart Rate Logging
+
+**Trigger**: After workout ends
+**Actions**:
+1. Wait 5 minutes
+2. Get heart rate from Health
+3. Run "Log Heart Rate" shortcut
+
+### Daily Summary
+
+**Trigger**: Time of day (10:00 PM)
+**Actions**:
+1. Get /coffee/today
+2. Get /heartrate/stats
+3. Show notification with summary
+
+---
+
+## Getting Help
+
+1. Test basic connectivity with `/health` endpoint
+2. Check [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) for common issues
+3. Verify API is running: `docker-compose logs coffee-tracker`
+4. Test with curl before creating shortcuts
+5. Check API docs: `https://coffee.danilocloud.me/docs`
+
+---
+
+## Resources
+
+- **API Documentation**: https://coffee.danilocloud.me/docs
+- **Health Endpoint**: https://coffee.danilocloud.me/health
+- **Apple Shortcuts User Guide**: https://support.apple.com/guide/shortcuts/
+- **Troubleshooting Guide**: [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)
+
+---
+
+**Last Updated**: 2024-10-05  
+**API Version**: 1.0.0  
+**Compatible with**: iOS 13+, iPadOS 13+, macOS 12+
 
 2. Set Variable
    - Name: CaffeineMg
