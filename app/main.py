@@ -87,8 +87,10 @@ app.add_middleware(
     allowed_hosts=settings.parsed_allowed_hosts() + [
         # Legacy / additional hosts that may still be used in deployment
         "testserver", "*.coffee-tracker.local",
-        # Docker internal networking
-        "coffee-tracker", "coffee-tracker:8000"
+        # Docker internal networking (for Prometheus scraping)
+        "coffee-tracker", "coffee-tracker:8000",
+        # Prometheus and monitoring
+        "prometheus", "prometheus:9090", "localhost:8000"
     ]
 )
 

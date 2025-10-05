@@ -154,9 +154,13 @@ site/
 *-FIXES.md
 *-CHANGES.md
 *-SETUP.md
-DEPLOYMENT-*.md
+*-SUMMARY.md
+DEPLOYMENT-STEPS.md
 PROMETHEUS-*.md
 README-*.md
+FINAL_SUMMARY.md
+COMMIT_MESSAGE.txt
+PRODUCTION-FIXES-SUMMARY.md
 
 # Package manager
 Pipfile.lock

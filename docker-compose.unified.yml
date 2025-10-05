@@ -1,0 +1,235 @@
+# Unified Production Docker Compose - All Services
+# Includes: PostgreSQL, Redis, Coffee Tracker API, Prometheus, Grafana
+#
+# Usage:
+#   docker-compose -f docker-compose.unified.yml up -d
+#
+# Access:
+#   - API: https://coffee.danilocloud.me
+#   - Prometheus: https://prometheus.danilocloud.me or http://localhost:9090
+#   - Grafana: https://grafana.danilocloud.me or http://localhost:3000
+#
+# Requirements:
+#   - Traefik reverse proxy running with traefik_net network
+#   - .env file with required credentials
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: coffee-tracker-postgres
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-coffee}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB:-coffee_db}
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-coffee} -d ${POSTGRES_DB:-coffee_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 128M
+
+  redis:
+    image: redis:7-alpine
+    container_name: coffee-tracker-redis
+    restart: unless-stopped
+    networks:
+      - internal
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+        reservations:
+          cpus: "0.1"
+          memory: 64M
+
+  coffee-tracker:
+    image: ${DOCKER_IMAGE:-ghcr.io/dny1020/coffee-tracker:${IMAGE_TAG:-latest}}
+    container_name: coffee-tracker
+    pull_policy: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+    environment:
+      - DATABASE_URL=postgresql+psycopg2://${POSTGRES_USER:-coffee}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-coffee_db}
+      - PYTHONPATH=/app
+      - REDIS_URL=redis://redis:6379/0
+      - API_KEY=${API_KEY}
+      - FASTAPI_ENV=${FASTAPI_ENV:-production}
+      - DEBUG=${DEBUG:-false}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1,coffee.danilocloud.me,prometheus.danilocloud.me,coffee-tracker}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
+      - TZ=${TZ:-UTC}
+      - METRICS_PUBLIC=${METRICS_PUBLIC:-true}
+      - SECURITY_HEADERS=${SECURITY_HEADERS:-true}
+    
+    networks:
+      - traefik_net
+      - internal
+      - monitoring
+    
+    ports:
+      - "8000:8000"
+    
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_net"
+      - "traefik.http.routers.coffee-tracker.rule=Host(`${DOMAIN:-coffee.danilocloud.me}`)"
+      - "traefik.http.routers.coffee-tracker.entrypoints=websecure"
+      - "traefik.http.routers.coffee-tracker.tls=true"
+      - "traefik.http.routers.coffee-tracker.tls.certresolver=myresolver"
+      - "traefik.http.services.coffee-tracker.loadbalancer.server.port=8000"
+    
+    volumes:
+      - ./data:/app/data
+    
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 50s
+    
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          cpus: "0.5"
+          memory: 256M
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: coffee-tracker-prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - monitoring
+      - traefik_net
+      - internal
+    
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_net"
+      - "traefik.http.routers.prometheus.rule=Host(`prometheus.danilocloud.me`)"
+      - "traefik.http.routers.prometheus.entrypoints=websecure"
+      - "traefik.http.routers.prometheus.tls=true"
+      - "traefik.http.routers.prometheus.tls.certresolver=myresolver"
+      - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
+    
+    depends_on:
+      - coffee-tracker
+    
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.1"
+          memory: 128M
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: coffee-tracker-grafana
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=https://grafana.danilocloud.me
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3000:3000"
+    networks:
+      - monitoring
+      - traefik_net
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_net"
+      - "traefik.http.routers.grafana.rule=Host(`grafana.danilocloud.me`)"
+      - "traefik.http.routers.grafana.entrypoints=websecure"
+      - "traefik.http.routers.grafana.tls=true"
+      - "traefik.http.routers.grafana.tls.certresolver=myresolver"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+
+    depends_on:
+      - prometheus
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.1"
+          memory: 128M
+
+volumes:
+  redis_data:
+  pg_data:
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  traefik_net:
+    external: true
+  internal:
+    driver: bridge
+  monitoring:
+    driver: bridge
