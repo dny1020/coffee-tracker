@@ -155,12 +155,39 @@ site/
 *-CHANGES.md
 *-SETUP.md
 *-SUMMARY.md
+*SUMMARY*.md
 DEPLOYMENT-STEPS.md
 PROMETHEUS-*.md
 README-*.md
-FINAL_SUMMARY.md
 COMMIT_MESSAGE.txt
+COMMIT-MSG.txt
 PRODUCTION-FIXES-SUMMARY.md
+*.fixes
+*.example.md
+SETUP-*.md
+COMPLETE-RESOLUTION.md
+DEPLOYMENT.md
+PRODUCTION_READY.md
+PRODUCTION-DEPLOYMENT.md
+PRODUCTION-READY-CHECKLIST.md
+PRODUCTION-READY.md
+GIT-COMMIT-MESSAGE.md
+START-HERE.md
+
+# Duplicate docker-compose files (keep only main docker-compose.yml)
+docker-compose.prod.yml
+docker-compose.production.yml
+docker-compose.prometheus.yml
+docker-compose.unified.yml
+docker-compose.*.local.yml
+docker-compose.override.yml
+fix-production.sh
+.env.production.example
+
+# Duplicate/old documentation (keep only essential ones)
+APPLE-SHORTCUTS-GUIDE.md
+DEPLOYMENT-GUIDE.md
+QUICK-START.md
 
 # Package manager
 Pipfile.lock
@@ -182,5 +209,8 @@ docker-compose.*.local.yml
 # Editor directories and files
 .nova/
 .vs/
-FINAL_SUMMARY.md
-COMMIT_MESSAGE.txt
+
+# Temporary/Draft files (keep clean repo)
+*-draft.md
+*-temp.md
+*WIP*.md
