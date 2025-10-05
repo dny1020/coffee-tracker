@@ -604,7 +604,8 @@ See [CHANGELOG.md](CHANGELOG.md) for detailed version history.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contributio
+n guidelines.
 
 ## Documentation
 

@@ -43,6 +43,11 @@ services:
     restart: unless-stopped
     networks:
       - internal
+    # Note: Port exposure removed for production security
+    # Redis only needs internal network access
+    # Uncomment below for development/debugging only:
+    # ports:
+    #   - "6379:6379"
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes
@@ -94,10 +99,15 @@ services:
       - traefik_net
       - internal
     
+    # Expose port for direct access (optional - comment out if using Traefik exclusively)
+    # Uncomment below to access via localhost:8000 for debugging
+    ports:
+      - "8000:8000"
+    
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_net"
-      - "traefik.http.routers.coffee-tracker.rule=Host(`${DOMAIN:-coffee.dommain.co}`)"
+      - "traefik.http.routers.coffee-tracker.rule=Host(`${DOMAIN:-coffee.danilocloud.me}`)"
       - "traefik.http.routers.coffee-tracker.entrypoints=websecure"
       - "traefik.http.routers.coffee-tracker.tls=true"
       - "traefik.http.routers.coffee-tracker.tls.certresolver=myresolver"

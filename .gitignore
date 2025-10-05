@@ -3,6 +3,8 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
+*.pyd
+*.pyo
 .Python
 build/
 develop-eggs/
@@ -16,9 +18,12 @@ parts/
 sdist/
 var/
 wheels/
+pip-wheel-metadata/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
 # Virtual environments
 venv/
@@ -26,13 +31,21 @@ env/
 ENV/
 .venv/
 .env.local
-.env
+env.bak/
+venv.bak/
 
 # Database
 *.db
 *.sqlite
 *.sqlite3
+*.db-shm
+*.db-wal
+*.db-journal
 data/
+db_data/
+pg_data/
+postgres_data/
+redis_data/
 
 # IDE
 .vscode/
@@ -40,10 +53,20 @@ data/
 *.swp
 *.swo
 *~
+.project
+.pydevproject
+.settings/
+*.sublime-project
+*.sublime-workspace
+.vscode-test/
 
 # OS
 .DS_Store
 Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
 
 # Docker
 .dockerignore
@@ -51,23 +74,41 @@ Thumbs.db
 # Test coverage
 .pytest_cache/
 .coverage
+.coverage.*
 htmlcov/
 *.cover
 .hypothesis/
+.tox/
+nosetests.xml
+coverage.xml
+*.coveragerc
 
 # Logs
 *.log
 logs/
+*.log.*
+pip-log.txt
+pip-delete-this-directory.txt
 
 # Temporary files
 *.tmp
 *.temp
 .cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+*.sage.py
 
-# Production environment files
+# Environment files
+.env
+.env.local
 .env.production
 .env.staging
 .env.*.local
+!.env.example
+!.env.production.example
 
 # Backups
 backups/
@@ -77,3 +118,54 @@ backups/
 # Docker override files
 docker-compose.override.yml
 docker-compose.*.local.yml
+
+# Monitoring data
+prometheus_data/
+grafana_data/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# pyenv
+.python-version
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath
+*.sage.py
+
+# Profiling
+*.prof
+*.lprof
+*.pstats
+
+# Alembic (database migrations)
+# alembic/versions/*.py (uncomment if you want to ignore migrations)
+
+# Documentation builds
+docs/_build/
+site/
+
+# Package manager
+Pipfile.lock
+poetry.lock
+pdm.lock
+
+# Secrets and certificates
+*.pem
+*.key
+*.crt
+*.cert
+secrets/
+
+# Local development overrides
+docker-compose.override.yml
+docker-compose.*.local.yml
+*.local.yml
+
+# Editor directories and files
+.nova/
+.vs/
