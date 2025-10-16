@@ -203,3 +203,4 @@ jobs:
             echo "✅ Staging deployment successful"
           else
             echo "❌ Deployment failed"
+          fi  

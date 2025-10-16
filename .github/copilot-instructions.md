@@ -29,7 +29,6 @@ This repository implements a FastAPI-based API for tracking caffeine intake and 
 - Invalid data is rejected with descriptive error messages.
 
 ## Rate Limiting
-
 - General endpoints: 30 req/min
 - Health: 60 req/min
 - Data logging endpoints: higher limits (e.g., 100/hour for coffee)

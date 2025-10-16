@@ -137,7 +137,30 @@ async def security_and_logging_middleware(request: Request, call_next):
         response.headers.setdefault("X-Frame-Options", "DENY")
         response.headers.setdefault("X-XSS-Protection", "0")
         response.headers.setdefault("Referrer-Policy", "no-referrer")
-        response.headers.setdefault("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
+        
+        # CSP: Allow Swagger UI and ReDoc to load from CDN while maintaining security
+        # Note: /docs and /redoc paths will have relaxed CSP, API endpoints remain strict
+        if request.url.path in ["/api/v1/docs", "/api/v1/redoc", "/docs", "/redoc"]:
+            # Relaxed CSP for documentation pages that need external resources
+            response.headers.setdefault("Content-Security-Policy", 
+                "default-src 'self'; "
+                "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+                "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; "
+                "img-src 'self' data: https://fastapi.tiangolo.com https://cdn.jsdelivr.net; "
+                "font-src 'self' https://fonts.gstatic.com; "
+                "connect-src 'self'; "
+                "frame-ancestors 'none'; "
+                "base-uri 'self'; "
+                "form-action 'self'"
+            )
+        else:
+            # Strict CSP for API endpoints
+            response.headers.setdefault("Content-Security-Policy", 
+                "default-src 'none'; "
+                "frame-ancestors 'none'; "
+                "base-uri 'none'; "
+                "form-action 'self'"
+            )
     return response
 
 # Database will be initialized on startup; set SKIP_DB_INIT to skip.
