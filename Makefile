@@ -84,7 +84,7 @@ prod-status: ## Check production service status
 docker-compose -f docker-compose.prod.yml ps
 @echo ""
 @echo "🏥 Health Check:"
-@curl -s http://localhost:8000/health 2>/dev/null | jq . || echo "❌ Health check failed"
+@curl -s http://localhost:8000/api/v1/health 2>/dev/null | jq . || echo "❌ Health check failed"
 
 prod-backup: ## Backup production database
 @echo "💾 Creating production backup..."
@@ -119,14 +119,14 @@ pytest-watch tests/
 
 validate: ## Validate all API endpoints
 @echo "Testing health endpoint..."
-@curl -s http://localhost:8000/health | jq .
+@curl -s http://localhost:8000/api/v1/health | jq .
 @echo "\nTesting root endpoint..."
-@curl -s http://localhost:8000/ | jq .
+@curl -s http://localhost:8000/api/v1/ | jq .
 @echo "\nTesting API info..."
-@curl -s http://localhost:8000/info | jq .
+@curl -s http://localhost:8000/api/v1/info | jq .
 
 health: ## Check service health
-@curl -s http://localhost:8000/health
+@curl -s http://localhost:8000/api/v1/health
 
 status: ## Show container status
 docker-compose ps

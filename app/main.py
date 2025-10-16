@@ -60,8 +60,8 @@ app = FastAPI(
     title="Coffee Tracker API",
     version="1.0.0",
     description="Track your caffeine addiction and cardiovascular deterioration with scientific precision",
-    docs_url="/docs",
-    redoc_url="/redoc",
+    docs_url="/api/v1/docs",
+    redoc_url="/api/v1/redoc",
     lifespan=lifespan
 )
 
@@ -144,20 +144,20 @@ async def security_and_logging_middleware(request: Request, call_next):
 # Include routers with auth dependency and rate limiting
 app.include_router(
     coffee.router,
-    prefix="/coffee",
+    prefix="/api/v1/coffee",
     tags=["coffee"],
     dependencies=[Depends(verify_api_key)]
 )
 
 app.include_router(
     heartrate.router,
-    prefix="/heartrate",
+    prefix="/api/v1/heartrate",
     tags=["heartrate"],
     dependencies=[Depends(verify_api_key)]
 )
 
 
-@app.get("/metrics")
+@app.get("/api/v1/metrics")
 def metrics(request: Request) -> Response:
     """Prometheus metrics endpoint. Secured unless METRICS_PUBLIC=true."""
     if not settings.metrics_public:
@@ -170,23 +170,23 @@ def metrics(request: Request) -> Response:
     return Response(content=data, media_type=CONTENT_TYPE_LATEST)
 
 
-@app.get("/")
+@app.get("/api/v1/")
 @limiter.limit("30/minute")
 def root(request: Request):
     """Root endpoint with basic info"""
     return {
         "message": "Coffee addiction tracker running",
         "version": "1.0.0",
-        "docs": "/docs",
-        "health": "/health",
+        "docs": "/api/v1/docs",
+        "health": "/api/v1/health",
         "api_endpoints": {
-            "coffee": "/coffee/",
-            "heartrate": "/heartrate/"
+            "coffee": "/api/v1/coffee/",
+            "heartrate": "/api/v1/heartrate/"
         }
     }
 
 
-@app.get("/health")
+@app.get("/api/v1/health")
 @limiter.limit("60/minute")
 def health_check(request: Request):
     """Enhanced health check endpoint for monitoring"""
@@ -242,7 +242,7 @@ def health_check(request: Request):
     return health_status
 
 
-@app.get("/info")
+@app.get("/api/v1/info")
 @limiter.limit("10/minute")
 def api_info(request: Request):
     """API information and usage guidelines"""
@@ -264,16 +264,16 @@ def api_info(request: Request):
         },
         "endpoints": {
             "coffee": {
-                "POST /coffee/": "Log coffee consumption",
-                "GET /coffee/today": "Today's caffeine total",
-                "GET /coffee/week": "Weekly breakdown",
-                "GET /coffee/stats": "Consumption statistics"
+                "POST /api/v1/coffee/": "Log coffee consumption",
+                "GET /api/v1/coffee/today": "Today's caffeine total",
+                "GET /api/v1/coffee/week": "Weekly breakdown",
+                "GET /api/v1/coffee/stats": "Consumption statistics"
             },
             "heartrate": {
-                "POST /heartrate/": "Log heart rate reading",
-                "GET /heartrate/current": "Latest heart rate",
-                "GET /heartrate/correlation": "Caffeine correlation analysis",
-                "GET /heartrate/stats": "Heart rate statistics"
+                "POST /api/v1/heartrate/": "Log heart rate reading",
+                "GET /api/v1/heartrate/current": "Latest heart rate",
+                "GET /api/v1/heartrate/correlation": "Caffeine correlation analysis",
+                "GET /api/v1/heartrate/stats": "Heart rate statistics"
             }
         }
     }

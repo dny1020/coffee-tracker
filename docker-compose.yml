@@ -7,10 +7,10 @@
 #   docker-compose down
 #
 # Access:
-#   API:        http://localhost:8000 or https://coffee.danilocloud.me
+#   API:        http://localhost:8000 or https://coffee.danilocloud.me/api/v1/
 #   Prometheus: http://localhost:9090 or https://prometheus.danilocloud.me
 #   Grafana:    http://localhost:3000 or https://grafana.danilocloud.me
-#   Docs:       http://localhost:8000/docs
+#   Docs:       http://localhost:8000/api/v1/docs
 
 services:
   postgres:
@@ -102,7 +102,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_net"
-      - "traefik.http.routers.coffee-tracker.rule=Host(`${DOMAIN:-coffee.danilocloud.me}`)"
+      - "traefik.http.routers.coffee-tracker.rule=Host(`${DOMAIN:coffee.danilocloud.me}`)"
       - "traefik.http.routers.coffee-tracker.entrypoints=websecure"
       - "traefik.http.routers.coffee-tracker.tls=true"
       - "traefik.http.routers.coffee-tracker.tls.certresolver=myresolver"
@@ -114,7 +114,7 @@ services:
     restart: unless-stopped
     
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
       interval: 30s
       timeout: 10s
       retries: 3

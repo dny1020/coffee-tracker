@@ -77,14 +77,17 @@ This repository implements a FastAPI-based API for tracking caffeine intake and 
 **Log Coffee:**
 
 ```bash
-curl -H "Authorization: Bearer $API_KEY" -X POST http://localhost:8000/coffee/
+curl -H "Authorization: Bearer $API_KEY" -X POST https://coffee.danilocloud.me/api/v1/coffee/
 -d '{"caffeine_mg": 120, "coffee_type": "americano", "notes": "late night hustle"}'
 ```
 
 **Log Heart Rate:**
 
 ```bash
-curl -H "Authorization: Bearer $API_KEY" -X POST http://localhost:8000/heartrate/
+curl -H "Authorization: Bearer $API_KEY" -X POST https://coffee.danilocloud.me/api/v1/heartrate/
+-d '{"bpm": 88, "context": "post-coffee", "notes": "wired"}'
+```bash
+curl -H "Authorization: Bearer $API_KEY" -X POST https://coffee.danilocloud.me/api/v1/heartrate/
 -d '{"bpm": 88, "context": "post-coffee", "notes": "wired"}'
 ```
 
@@ -115,10 +118,10 @@ curl -H "Authorization: Bearer $API_KEY" -X POST http://localhost:8000/heartrate
 
 ## References
 
-Swagger: `/docs`  
-ReDoc: `/redoc`  
-Telemetry: `/metrics`  
-Info: `/info`
+Swagger: `/api/v1/docs`  
+ReDoc: `/api/v1/redoc`  
+Telemetry: `/api/v1/metrics`  
+Info: `/api/v1/info`
 
 ---
 

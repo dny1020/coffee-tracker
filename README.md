@@ -98,10 +98,10 @@ make down
 ## API Usage
 
 ### Base URL
-`http://localhost:8000`
+`https://coffee.danilocloud.me/api/v1/` (production) or `http://localhost:8000/api/v1/` (local)
 
 ### Authentication
-All endpoints except `/health` and `/` require authentication:
+All endpoints except `/api/v1/health` and `/api/v1/` require authentication:
 
 ```bash
 # Set your API key (change the default in .env)
@@ -109,20 +109,20 @@ export API_KEY="your-secret-api-key-here"
 
 # Use in requests
 curl -H "Authorization: Bearer $API_KEY" \
-     http://localhost:8000/coffee/today
+     https://coffee.danilocloud.me/api/v1/coffee/today
 ```
 
 ### Documentation
-- **Swagger UI**: `http://localhost:8000/docs`
-- **ReDoc**: `http://localhost:8000/redoc`
-- **API Info**: `http://localhost:8000/info`
+- **Swagger UI**: `https://coffee.danilocloud.me/api/v1/docs` or `http://localhost:8000/api/v1/docs`
+- **ReDoc**: `https://coffee.danilocloud.me/api/v1/redoc` or `http://localhost:8000/api/v1/redoc`
+- **API Info**: `https://coffee.danilocloud.me/api/v1/info` or `http://localhost:8000/api/v1/info`
 
 ### Coffee Endpoints
 
 **Log coffee consumption:**
 ```bash
 curl -H "Authorization: Bearer $API_KEY" \
-     -X POST http://localhost:8000/coffee/ \
+     -X POST https://coffee.danilocloud.me/api/v1/coffee/ \
      -H "Content-Type: application/json" \
      -d '{
        "caffeine_mg": 95,
@@ -134,7 +134,7 @@ curl -H "Authorization: Bearer $API_KEY" \
 **Get today's caffeine total:**
 ```bash
 curl -H "Authorization: Bearer $API_KEY" \
-     http://localhost:8000/coffee/today
+     https://coffee.danilocloud.me/api/v1/coffee/today
 ```
 
 **Response:**
@@ -151,19 +151,19 @@ curl -H "Authorization: Bearer $API_KEY" \
 **Get weekly breakdown:**
 ```bash
 curl -H "Authorization: Bearer $API_KEY" \
-     http://localhost:8000/coffee/week
+     https://coffee.danilocloud.me/api/v1/coffee/week
 ```
 
 **Get detailed statistics:**
 ```bash
 curl -H "Authorization: Bearer $API_KEY" \
-     "http://localhost:8000/coffee/stats?days=30"
+     "https://coffee.danilocloud.me/api/v1/coffee/stats?days=30"
 ```
 
 **Update coffee log:**
 ```bash
 curl -H "Authorization: Bearer $API_KEY" \
-     -X PUT http://localhost:8000/coffee/1 \
+     -X PUT https://coffee.danilocloud.me/api/v1/coffee/1 \
      -H "Content-Type: application/json" \
      -d '{"caffeine_mg": 120}'
 ```
@@ -173,7 +173,7 @@ curl -H "Authorization: Bearer $API_KEY" \
 **Log heart rate:**
 ```bash
 curl -H "Authorization: Bearer $API_KEY" \
-     -X POST http://localhost:8000/heartrate/ \
+     -X POST https://coffee.danilocloud.me/api/v1/heartrate/ \
      -H "Content-Type: application/json" \
      -d '{
        "bpm": 85,
@@ -185,7 +185,7 @@ curl -H "Authorization: Bearer $API_KEY" \
 **Get current heart rate:**
 ```bash
 curl -H "Authorization: Bearer $API_KEY" \
-     http://localhost:8000/heartrate/current
+     https://coffee.danilocloud.me/api/v1/heartrate/current
 ```
 
 **Response:**
@@ -203,13 +203,13 @@ curl -H "Authorization: Bearer $API_KEY" \
 **Get heart rate statistics:**
 ```bash
 curl -H "Authorization: Bearer $API_KEY" \
-     "http://localhost:8000/heartrate/stats?days=7"
+     "https://coffee.danilocloud.me/api/v1/heartrate/stats?days=7"
 ```
 
 **Get caffeine correlation analysis:**
 ```bash
 curl -H "Authorization: Bearer $API_KEY" \
-     "http://localhost:8000/heartrate/correlation?hours_after=3"
+     "https://coffee.danilocloud.me/api/v1/heartrate/correlation?hours_after=3"
 ```
 
 ## Database
