@@ -157,9 +157,29 @@ app.include_router(
 )
 
 
+@app.get("/metrics")
+def metrics_root(request: Request) -> Response:
+    """Prometheus metrics endpoint at root level (standard location for monitoring).
+    
+    This endpoint is separate from the versioned API to follow Prometheus conventions.
+    Secured unless METRICS_PUBLIC=true.
+    """
+    if not settings.metrics_public:
+        # Require API key auth; reuse verify_api_key dependency approach manually
+        auth_header = request.headers.get("Authorization")
+        expected = os.getenv("API_KEY", settings.api_key)
+        if not auth_header or not auth_header.startswith("Bearer ") or auth_header.split(" ", 1)[1] != expected:
+            raise HTTPException(status_code=401, detail="Unauthorized metrics access")
+    data = generate_latest()
+    return Response(content=data, media_type=CONTENT_TYPE_LATEST)
+
+
 @app.get("/api/v1/metrics")
 def metrics(request: Request) -> Response:
-    """Prometheus metrics endpoint. Secured unless METRICS_PUBLIC=true."""
+    """Prometheus metrics endpoint (also available in versioned API for consistency).
+    
+    Secured unless METRICS_PUBLIC=true.
+    """
     if not settings.metrics_public:
         # Require API key auth; reuse verify_api_key dependency approach manually
         auth_header = request.headers.get("Authorization")

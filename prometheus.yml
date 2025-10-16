@@ -2,6 +2,10 @@
 #
 # This configuration scrapes metrics from the Coffee Tracker API
 # Metrics are exposed at: http://coffee-tracker:8000/metrics
+#
+# IMPORTANT: 
+# - If METRICS_PUBLIC=false in .env, update the Bearer token below with your API_KEY
+# - If METRICS_PUBLIC=true in .env, you can remove the authorization section
 
 global:
   scrape_interval: 15s
@@ -43,10 +47,12 @@ scrape_configs:
           app: 'fastapi'
           environment: 'production'
     # Authentication for metrics endpoint
-    # When METRICS_PUBLIC=false in .env, Prometheus needs API key
-    authorization:
-      type: Bearer
-      credentials: 'coffee-addict-secret-key-2025'
+    # OPTION 1: If METRICS_PUBLIC=false, uncomment and set your API_KEY
+    # authorization:
+    #   type: Bearer
+    #   credentials: 'your-api-key-here'
+    # 
+    # OPTION 2: Set METRICS_PUBLIC=true in .env (recommended for internal networks)
 
   # PostgreSQL exporter (optional - requires postgres_exporter)
   # - job_name: 'postgres'
