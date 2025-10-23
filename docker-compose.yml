@@ -22,7 +22,7 @@ services:
       - POSTGRES_DB=${POSTGRES_DB:-coffee_db}
       - PGDATA=/var/lib/postgresql/data/pgdata
     volumes:
-      - pg_data:/var/lib/postgresql/data
+      - ./data/postgres:/var/lib/postgresql/data
     networks:
       - internal
     healthcheck:
@@ -48,7 +48,7 @@ services:
     networks:
       - internal
     volumes:
-      - redis_data:/data
+      - ./data/redis:/data
     command: redis-server --appendonly yes
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -141,7 +141,7 @@ services:
       - '--web.console.templates=/usr/share/prometheus/consoles'
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus_data:/prometheus
+      - ./data/prometheus:/prometheus
     ports:
       - "9090:9090"
     networks:
@@ -186,7 +186,7 @@ services:
       - GF_SERVER_ROOT_URL=${GRAFANA_URL:-http://localhost:3000}
       - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
     volumes:
-      - grafana_data:/var/lib/grafana
+      - ./data/grafana:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
     ports:
@@ -219,16 +219,6 @@ services:
         reservations:
           cpus: "0.1"
           memory: 128M
-
-volumes:
-  redis_data:
-    driver: local
-  pg_data:
-    driver: local
-  prometheus_data:
-    driver: local
-  grafana_data:
-    driver: local
 
 networks:
   traefik_net:

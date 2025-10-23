@@ -41,7 +41,13 @@ venv.bak/
 *.db-shm
 *.db-wal
 *.db-journal
-data/
+# Ignore data contents but keep structure
+data/postgres/*
+data/redis/*
+data/prometheus/*
+data/grafana/*
+!data/.gitkeep
+!data/*/.gitkeep
 db_data/
 pg_data/
 postgres_data/
