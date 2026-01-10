@@ -135,7 +135,6 @@ See [PRODUCTION_READY.md](PRODUCTION_READY.md) for complete deployment guide.
 - PostgreSQL / SQLite
 - Redis (rate limiting)
 - Docker Compose
-- Prometheus metrics
 
 ## Documentation
 

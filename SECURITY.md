@@ -90,7 +90,7 @@ Please include the following information in your report:
 
 - Configured rate limits protect against abuse
 - Adjust limits based on your use case in `app/routers/`
-- Monitor rate limit hits via Prometheus metrics
+- Monitor rate limit hits via application logs
 
 ### CORS Configuration
 

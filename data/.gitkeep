@@ -2,5 +2,3 @@
 # Subdirectories contain service data:
 # - postgres/   PostgreSQL database files
 # - redis/      Redis persistence files
-# - prometheus/ Prometheus metrics data
-# - grafana/    Grafana dashboards and settings

@@ -30,7 +30,6 @@ class Settings(BaseSettings):
     # Security / Networking (comma separated lists)
     allowed_hosts: str = "localhost,127.0.0.1"
     cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
-    metrics_public: bool = False
     max_request_body_bytes: int = 1_048_576  # 1 MB default
     security_headers: bool = True
     

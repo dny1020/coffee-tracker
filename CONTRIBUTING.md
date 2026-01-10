@@ -158,7 +158,6 @@ app/
 ├── models.py            # SQLAlchemy models
 ├── auth.py              # Authentication
 ├── limiter.py           # Rate limiting
-├── metrics.py           # Prometheus metrics
 └── routers/
     ├── coffee.py        # Coffee endpoints
     └── heartrate.py     # Heart rate endpoints

@@ -11,8 +11,6 @@ import logging
 import sys
 
 # Import database lazily inside functions to avoid SQLAlchemy import at module import time under Python 3.13
-from app.metrics import observe_request
-from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 import uuid
 from app.routers import coffee, heartrate
 from app.auth import verify_api_key
@@ -87,10 +85,8 @@ app.add_middleware(
     allowed_hosts=settings.parsed_allowed_hosts() + [
         # Legacy / additional hosts that may still be used in deployment
         "testserver", "*.coffee-tracker.local",
-        # Docker internal networking (for Prometheus scraping)
-        "coffee-tracker", "coffee-tracker:8000",
-        # Prometheus and monitoring
-        "prometheus", "prometheus:9090", "localhost:8000"
+        # Docker internal networking
+        "coffee-tracker", "coffee-tracker:8000"
     ]
 )
 
@@ -122,12 +118,6 @@ async def security_and_logging_middleware(request: Request, call_next):
             "duration_ms": round(duration * 1000, 1)
         }
     )
-
-    # Metrics
-    try:
-        observe_request(request.method, request.url.path, response.status_code, duration)
-    except Exception as e:
-        logger.error(f"Metrics error: {e}", exc_info=True)
 
     # Add headers
     response.headers["X-Request-ID"] = request_id
@@ -178,39 +168,6 @@ app.include_router(
     tags=["heartrate"],
     dependencies=[Depends(verify_api_key)]
 )
-
-
-@app.get("/metrics")
-def metrics_root(request: Request) -> Response:
-    """Prometheus metrics endpoint at root level (standard location for monitoring).
-    
-    This endpoint is separate from the versioned API to follow Prometheus conventions.
-    Secured unless METRICS_PUBLIC=true.
-    """
-    if not settings.metrics_public:
-        # Require API key auth; reuse verify_api_key dependency approach manually
-        auth_header = request.headers.get("Authorization")
-        expected = os.getenv("API_KEY", settings.api_key)
-        if not auth_header or not auth_header.startswith("Bearer ") or auth_header.split(" ", 1)[1] != expected:
-            raise HTTPException(status_code=401, detail="Unauthorized metrics access")
-    data = generate_latest()
-    return Response(content=data, media_type=CONTENT_TYPE_LATEST)
-
-
-@app.get("/api/v1/metrics")
-def metrics(request: Request) -> Response:
-    """Prometheus metrics endpoint (also available in versioned API for consistency).
-    
-    Secured unless METRICS_PUBLIC=true.
-    """
-    if not settings.metrics_public:
-        # Require API key auth; reuse verify_api_key dependency approach manually
-        auth_header = request.headers.get("Authorization")
-        expected = os.getenv("API_KEY", settings.api_key)
-        if not auth_header or not auth_header.startswith("Bearer ") or auth_header.split(" ", 1)[1] != expected:
-            raise HTTPException(status_code=401, detail="Unauthorized metrics access")
-    data = generate_latest()
-    return Response(content=data, media_type=CONTENT_TYPE_LATEST)
 
 
 @app.get("/api/v1/")

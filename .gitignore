@@ -44,8 +44,6 @@ venv.bak/
 # Ignore data contents but keep structure
 data/postgres/*
 data/redis/*
-data/prometheus/*
-data/grafana/*
 !data/.gitkeep
 !data/*/.gitkeep
 db_data/
@@ -126,10 +124,6 @@ backups/
 docker-compose.override.yml
 docker-compose.*.local.yml
 
-# Monitoring data
-prometheus_data/
-grafana_data/
-
 # Jupyter Notebook
 .ipynb_checkpoints
 *.ipynb
@@ -163,7 +157,6 @@ site/
 *-SUMMARY.md
 *SUMMARY*.md
 DEPLOYMENT-STEPS.md
-PROMETHEUS-*.md
 README-*.md
 COMMIT_MESSAGE.txt
 COMMIT-MSG.txt
@@ -183,7 +176,6 @@ START-HERE.md
 # Duplicate docker-compose files (keep only main docker-compose.yml)
 docker-compose.prod.yml
 docker-compose.production.yml
-docker-compose.prometheus.yml
 docker-compose.unified.yml
 docker-compose.*.local.yml
 docker-compose.override.yml
