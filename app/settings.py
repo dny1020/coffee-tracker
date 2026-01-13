@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
     max_request_body_bytes: int = 1_048_576  # 1 MB default
     security_headers: bool = True
+    metrics_public: bool = True  # Allow public access to Prometheus metrics
     
     # Business logic defaults (configurable)
     max_caffeine_mg: int = 1000

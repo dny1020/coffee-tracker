@@ -5,6 +5,7 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from contextlib import asynccontextmanager
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 import time
 import os
 import logging
@@ -277,3 +278,13 @@ def api_info(request: Request):
             }
         }
     }
+
+
+@app.get("/metrics")
+@app.get("/api/v1/metrics")
+def metrics(request: Request):
+    """Prometheus metrics endpoint"""
+    if not settings.metrics_public:
+        # If metrics are not public, require authentication
+        verify_api_key(request)
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
