@@ -1,50 +1,37 @@
-"""Application settings loaded from environment variables.
-
-Centralizes configuration so other modules (main, limiter, routers) don't
-need to read environment variables directly. Single source of truth.
-Uses pydantic-settings (Pydantic v2) with extra fields ignored so that
-adding env vars won't crash the app.
-"""
+"""Application settings from environment variables."""
 from functools import lru_cache
 from typing import List
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    # Core
+    # Database & Auth
     database_url: str = "sqlite:///data/coffee.db"
     api_key: str = "coffee-addict-secret-key-2025"
-    # Use in-memory limiter by default; override with real Redis in production (.env)
-    redis_url: str = "memory://"
 
-    # App metadata / runtime
+    # App
     fastapi_env: str = "production"
     debug: bool = False
-    app_name: str = "Coffee Tracker"
-    app_version: str = "1.0.0"
-    host: str = "0.0.0.0"
-    port: int = 8000
     log_level: str = "info"
     tz: str = "UTC"
 
-    # Security / Networking (comma separated lists)
+    # Security
     allowed_hosts: str = "localhost,127.0.0.1"
-    cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
-    max_request_body_bytes: int = 1_048_576  # 1 MB default
+    cors_origins: str = "http://localhost:3000"
+    max_request_body_bytes: int = 1_048_576
     security_headers: bool = True
-    metrics_public: bool = True  # Allow public access to Prometheus metrics
+    metrics_public: bool = True
     
-    # Business logic defaults (configurable)
+    # Validation limits
     max_caffeine_mg: int = 1000
     recommended_daily_caffeine_mg: int = 400
     min_heart_rate_bpm: int = 30
     max_heart_rate_bpm: int = 250
 
-    # Pydantic settings config
     model_config = SettingsConfigDict(
         env_file=".env",
         case_sensitive=False,
-        extra="ignore",  # ignore unexpected env vars instead of raising ValidationError
+        extra="ignore",
     )
 
     def parsed_allowed_hosts(self) -> List[str]:
@@ -56,7 +43,6 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    """Cached settings instance."""
     return Settings()
 
 

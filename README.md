@@ -1,27 +1,6 @@
 # Coffee Tracker API
 
-Track your caffeine consumption and heart rate with statistical analysis. Log coffee intake, monitor heart rate, and analyze correlations between the two.
-
-## iPhone Shortcuts Integration
-
-Use Apple Shortcuts to log coffee and heart rate directly from your iPhone.
-
-
-
-### Screenshots
-
-![alt text](image.png)
-
-![alt text](image-1.png)
-
-## Features
-
-- **Coffee Logging**: Track caffeine intake (0-1000mg validated)
-- **Heart Rate Monitoring**: Log BPM readings (30-250 range)
-- **Statistical Analysis**: Mean, median, standard deviation, correlations
-- **Rate Limiting**: Redis-backed protection (30-60 req/min)
-- **API Key Auth**: Bearer token security for all data endpoints
-- **Timezone Aware**: ISO8601 timestamps throughout
+Track your caffeine consumption and heart rate with statistical analysis.
 
 ## Quick Start
 
@@ -30,124 +9,83 @@ Use Apple Shortcuts to log coffee and heart rate directly from your iPhone.
 git clone <repo-url>
 cd coffee-tracker
 cp .env.example .env
-# Edit .env and set your API_KEY
+# Edit .env and set your API_KEY and POSTGRES_PASSWORD
 
 # 2. Start services
-make up
+docker-compose up -d
 
-# 3. Verify
-make health
+# 3. Test
+curl http://localhost:8000/api/v1/health
 ```
-
-**Common commands:**
-- `make up` - Start services
-- `make down` - Stop services
-- `make logs` - View logs
-- `make test` - Run tests
-- `make backup` - Backup database
 
 ## API Documentation
 
-**Base URL:** `https://coffee.danilocloud.me/api/v1/` (production) or `http://localhost:8000/api/v1/` (local)
+- **Base URL**: `http://localhost:8000/api/v1/`
+- **Swagger UI**: `/api/v1/docs`
+- **ReDoc**: `/api/v1/redoc`
 
-**Docs:**
-- Swagger UI: `/api/v1/docs`
-- ReDoc: `/api/v1/redoc`
-- API Info: `/api/v1/info`
+### Authentication
 
-**Authentication:**
+All endpoints require Bearer token authentication:
 ```bash
-export API_KEY="your-secret-api-key-here"
-curl -H "Authorization: Bearer $API_KEY" https://coffee.danilocloud.me/api/v1/coffee/today
+curl -H "Authorization: Bearer YOUR_API_KEY" http://localhost:8000/api/v1/coffee/today
 ```
 
-## API Examples
+## Main Endpoints
 
-**Log Coffee:**
-```bash
-curl -H "Authorization: Bearer $API_KEY" \
-     -X POST https://coffee.danilocloud.me/api/v1/coffee/ \
-     -d '{"caffeine_mg": 95, "coffee_type": "espresso", "notes": "late night coding"}'
-```
+### Coffee
+- `POST /coffee/` - Log coffee consumption
+- `GET /coffee/today` - Today's caffeine total
+- `GET /coffee/week` - Weekly breakdown
+- `GET /coffee/stats` - Statistics
 
-**Today's Total:**
-```bash
-curl -H "Authorization: Bearer $API_KEY" https://coffee.danilocloud.me/api/v1/coffee/today
-# Returns: {"total_caffeine_mg": 285, "addiction_level": "moderate addict", ...}
-```
-
-**Log Heart Rate:**
-```bash
-curl -H "Authorization: Bearer $API_KEY" \
-     -X POST https://coffee.danilocloud.me/api/v1/heartrate/ \
-     -d '{"bpm": 85, "context": "resting"}'
-```
-
-**Correlation Analysis:**
-```bash
-curl -H "Authorization: Bearer $API_KEY" \
-     "https://coffee.danilocloud.me/api/v1/heartrate/correlation?hours_after=3"
-```
-
-
-
-### Setup Instructions
-
-1. Open the Shortcuts app on your iPhone
-2. Create a new shortcut with "Get Contents of URL" action
-3. Set URL to: `https://coffee.danilocloud.me/api/v1/coffee/`
-4. Method: POST
-5. Add Headers:
-   - `Authorization`: `Bearer YOUR_API_KEY`
-   - `Content-Type`: `application/json`
-6. Request Body: JSON with your coffee data
-
-Example shortcuts available in the `/shortcuts` folder (coming soon).
+### Heart Rate
+- `POST /heartrate/` - Log heart rate reading
+- `GET /heartrate/current` - Latest reading
+- `GET /heartrate/correlation` - Caffeine correlation
+- `GET /heartrate/stats` - Statistics
 
 ## Configuration
 
-**Key environment variables (.env):**
+Key environment variables:
 ```env
-DATABASE_URL=sqlite:///data/coffee.db
-API_KEY=your-secret-key-here  # CHANGE IN PRODUCTION
-REDIS_URL=redis://redis:6379/0
+DATABASE_URL=postgresql+psycopg2://coffee:PASSWORD@postgres:5432/coffee_db
+API_KEY=your-secret-key-here
 CORS_ORIGINS=http://localhost:3000
+ALLOWED_HOSTS=localhost,127.0.0.1
 ```
 
-**Database Schema:**
-- `coffee_logs`: id, timestamp, caffeine_mg (0-1000), coffee_type, notes
-- `heart_rate_logs`: id, timestamp, bpm (30-250), context, notes
+## Development
+
+```bash
+# Start services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Run tests
+pytest tests/ -v
+
+# Stop services
+docker-compose down
+```
 
 ## Deployment
 
-**Production checklist:**
-- Change API_KEY in .env
-- Configure CORS_ORIGINS
-- Set up HTTPS/TLS (nginx reverse proxy)
-- Configure backups (`make backup` in cron)
-- Set up monitoring
+1. Change `API_KEY` and `POSTGRES_PASSWORD` in `.env`
+2. Configure `CORS_ORIGINS` and `ALLOWED_HOSTS`
+3. Set up HTTPS with reverse proxy
+4. Configure automated backups
 
-See [PRODUCTION_READY.md](PRODUCTION_READY.md) for complete deployment guide.
+See [SECURITY.md](SECURITY.md) for security checklist.
 
 ## Tech Stack
 
 - Python 3.11+ / FastAPI
 - PostgreSQL / SQLite
-- Redis (rate limiting)
 - Docker Compose
-
-## Documentation
-
-- [PRODUCTION_READY.md](PRODUCTION_READY.md) - Deployment guide
-- [RUNBOOK.md](RUNBOOK.md) - Operations procedures
-- [SECURITY.md](SECURITY.md) - Security policies
-- [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution guidelines
-- [CHANGELOG.md](CHANGELOG.md) - Version history
 
 ## License
 
 Apache License 2.0 - see [LICENSE](LICENSE) file.
-
----
-
-**Note**: This API tracks your caffeine and heart rate data with statistical precision. The correlation analysis provides insights into how caffeine affects your cardiovascular system.

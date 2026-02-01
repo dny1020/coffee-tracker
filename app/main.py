@@ -219,23 +219,6 @@ def health_check(request: Request):
             "error": str(e)
         }
     
-    # Check Redis connection
-    try:
-        import redis
-        redis_url = os.getenv("REDIS_URL", "")
-        if redis_url.startswith("redis://"):
-            r = redis.from_url(redis_url)
-            r.ping()
-            health_status["redis"] = {"status": "healthy"}
-        else:
-            health_status["redis"] = {"status": "in-memory"}
-    except Exception as e:
-        logger.error(f"Redis health check failed: {e}", exc_info=True)
-        health_status["redis"] = {
-            "status": "unhealthy",
-            "error": str(e)
-        }
-    
     # Overall status
     if health_status.get("database", {}).get("status") == "unhealthy":
         health_status["status"] = "degraded"

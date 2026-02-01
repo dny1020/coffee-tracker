@@ -1,214 +1,47 @@
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
 *.so
-*.pyd
-*.pyo
 .Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-pip-wheel-metadata/
-share/python-wheels/
 *.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
+dist/
+build/
 
 # Virtual environments
 venv/
-env/
-ENV/
 .venv/
-.env.local
-env.bak/
-venv.bak/
+env/
 
 # Database
 *.db
-*.sqlite
-*.sqlite3
-*.db-shm
-*.db-wal
-*.db-journal
-# Ignore data contents but keep structure
+*.sqlite*
+*.db-*
 data/postgres/*
-data/redis/*
 !data/.gitkeep
-!data/*/.gitkeep
-db_data/
-pg_data/
-postgres_data/
-redis_data/
 
 # IDE
 .vscode/
 .idea/
 *.swp
-*.swo
-*~
-.project
-.pydevproject
-.settings/
-*.sublime-project
-*.sublime-workspace
-.vscode-test/
-
-# OS
 .DS_Store
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-$RECYCLE.BIN/
-*.lnk
 
-# Docker
-.dockerignore
-
-# Test coverage
+# Test
 .pytest_cache/
 .coverage
-.coverage.*
 htmlcov/
-*.cover
-.hypothesis/
-.tox/
-nosetests.xml
-coverage.xml
-*.coveragerc
 
 # Logs
 *.log
-logs/
-*.log.*
-pip-log.txt
-pip-delete-this-directory.txt
 
-# Temporary files
-*.tmp
-*.temp
-.cache/
-.mypy_cache/
-.dmypy.json
-dmypy.json
-.pyre/
-.pytype/
-*.sage.py
-
-# Environment files
+# Environment
 .env
-.env.local
-.env.production
-.env.staging
-.env.*.local
+.env.*
 !.env.example
-!.env.production.example
 
 # Backups
 backups/
-*.sql
 *.backup
-*.dump
+*.sql
 
-# Docker override files
+# Docker
 docker-compose.override.yml
-docker-compose.*.local.yml
-
-# Jupyter Notebook
-.ipynb_checkpoints
-*.ipynb
-
-# pyenv
-.python-version
-
-# Celery
-celerybeat-schedule
-celerybeat.pid
-
-# SageMath
-*.sage.py
-
-# Profiling
-*.prof
-*.lprof
-*.pstats
-
-# Alembic (database migrations)
-# alembic/versions/*.py (uncomment if you want to ignore migrations)
-
-# Documentation builds
-docs/_build/
-site/
-
-# Temporary documentation files
-*-FIXES.md
-*-CHANGES.md
-*-SETUP.md
-*-SUMMARY.md
-*SUMMARY*.md
-DEPLOYMENT-STEPS.md
-README-*.md
-COMMIT_MESSAGE.txt
-COMMIT-MSG.txt
-PRODUCTION-FIXES-SUMMARY.md
-*.fixes
-*.example.md
-SETUP-*.md
-COMPLETE-RESOLUTION.md
-DEPLOYMENT.md
-PRODUCTION_READY.md
-PRODUCTION-DEPLOYMENT.md
-PRODUCTION-READY-CHECKLIST.md
-PRODUCTION-READY.md
-GIT-COMMIT-MESSAGE.md
-START-HERE.md
-
-# Duplicate docker-compose files (keep only main docker-compose.yml)
-docker-compose.prod.yml
-docker-compose.production.yml
-docker-compose.unified.yml
-docker-compose.*.local.yml
-docker-compose.override.yml
-fix-production.sh
-.env.production.example
-
-# Duplicate/old documentation (keep only essential ones)
-APPLE-SHORTCUTS-GUIDE.md
-DEPLOYMENT-GUIDE.md
-QUICK-START.md
-
-# Package manager
-Pipfile.lock
-poetry.lock
-pdm.lock
-
-# Secrets and certificates
-*.pem
-*.key
-*.crt
-*.cert
-secrets/
-
-# Local development overrides
-docker-compose.override.yml
-docker-compose.*.local.yml
-*.local.yml
-
-# Editor directories and files
-.nova/
-.vs/
-
-# Temporary/Draft files (keep clean repo)
-*-draft.md
-*-temp.md
-*WIP*.md

@@ -1,0 +1,200 @@
+# Git
+.git
+.gitignore
+.gitattributes
+.github
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyd
+*.pyo
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+pip-wheel-metadata/
+.installed.cfg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+*.sublime-project
+*.sublime-workspace
+.nova/
+.vs/
+
+# OS
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Documentation (exclude from Docker image to reduce size)
+*.md
+!README.md
+!CONTRIBUTING.md
+!SECURITY.md
+!LICENSE.md
+docs/
+*.rst
+*-SUMMARY.md
+*-FIXES.md
+*SUMMARY*.md
+FINAL_SUMMARY.md
+COMMIT_MESSAGE.txt
+*-draft.md
+*-temp.md
+*.fixes
+*.example.md
+
+# Database files (will be in volumes)
+data/
+db_data/
+pg_data/
+postgres_data/
+redis_data/
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+*.db-journal
+
+# Test files
+tests/
+test/
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.hypothesis/
+nosetests.xml
+coverage.xml
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+azure-pipelines.yml
+Jenkinsfile
+
+# Logs
+*.log
+logs/
+*.log.*
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Environment files
+.env
+.env.*
+!.env.example
+!.env.production.example
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+
+# Docker files (not needed in image)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Development tools
+Makefile
+Makefile.*
+.editorconfig
+.pre-commit-config.yaml
+
+# Monitoring configs (use volumes instead)
+prometheus.yml
+prometheus/
+grafana/
+prometheus_data/
+grafana_data/
+
+# Backup files
+backups/
+*.backup
+*.bak
+*.dump
+*.sql.gz
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# Package manager files
+Pipfile
+Pipfile.lock
+poetry.lock
+pdm.lock
+pyproject.toml
+
+# Profiling
+*.prof
+*.lprof
+*.pstats
+
+# Secrets
+*.pem
+*.key
+*.crt
+*.cert
+secrets/
+
+# Screenshots and images (if any in repo)
+screenshots/
+*.png
+*.jpg
+*.jpeg
+*.gif
+
+# License and contributing files
+LICENSE
+LICENSE.*
+CONTRIBUTING.md
+CODE_OF_CONDUCT.md
+CHANGELOG.md
+HISTORY.md
+
+# Scripts (build/deploy scripts not needed in image)
+scripts/
+*.sh
+!docker-entrypoint.sh
+
+# Kubernetes/Helm
+k8s/
+helm/
+*.yaml
+*.yml
+!docker-compose.yml

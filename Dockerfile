@@ -33,10 +33,10 @@ RUN mkdir -p /app/data && \
 USER appuser
 
 # Expose port
-EXPOSE 8000
+EXPOSE 4000
 
 # Environment variables
 ENV PYTHONPATH=/app
 
 # Run with uvicorn
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "4000"]
