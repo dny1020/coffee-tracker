@@ -15,10 +15,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY app/ ./app/
-COPY tests/ ./tests/
 COPY .env.example ./
-# Copy pytest.ini only if exists (handled at build context level)
-COPY pytest.ini ./pytest.ini
 
 # Create non-root user for security
 RUN addgroup -g 1000 appuser && \
