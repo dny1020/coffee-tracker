@@ -58,22 +58,6 @@ class CoffeeCreate(BaseModel):
         return v if v else None
 
 
-class CoffeeUpdate(BaseModel):
-    caffeine_mg: Optional[float] = Field(None, ge=0, le=1000)
-    coffee_type: Optional[str] = Field(None, max_length=100)
-    notes: Optional[str] = Field(None, max_length=1000)
-
-    @field_validator('caffeine_mg')
-    @classmethod
-    def validate_caffeine(cls, v):
-        if v is not None:
-            if v < 0:
-                raise ValueError('Caffeine amount cannot be negative')
-            if v > settings.max_caffeine_mg:
-                raise ValueError(f'Caffeine amount over {settings.max_caffeine_mg}mg is dangerous')
-        return v
-
-
 class CoffeeResponse(BaseModel):
     id: int
     timestamp: datetime
@@ -104,77 +88,6 @@ def log_coffee(coffee: CoffeeCreate, request: Request, db: Session = Depends(get
     except Exception as e:
         logger.error(f"Coffee metrics error: {e}", exc_info=True)
     return db_coffee
-
-
-@router.get("/today")
-def get_today_caffeine(db: Session = Depends(get_db)):
-    """Get total caffeine consumed today"""
-    today = date.today()
-    total = db.query(func.sum(CoffeeLog.caffeine_mg)).filter(
-        func.date(CoffeeLog.timestamp) == today
-    ).scalar() or 0
-
-    # More nuanced addiction levels
-    if total == 0:
-        level = "caffeine-free saint"
-    elif total < 100:
-        level = "amateur"
-    elif total < 200:
-        level = "casual user"
-    elif total < 300:
-        level = "moderate addict"
-    elif total < 400:
-        level = "serious problem"
-    elif total < 600:
-        level = "severe addiction"
-    else:
-        level = "call emergency services"
-
-    return {
-        "date": today,
-        "total_caffeine_mg": round(total, 2),
-        "addiction_level": level,
-        "recommended_max": settings.recommended_daily_caffeine_mg,
-        "over_limit": total > settings.recommended_daily_caffeine_mg
-    }
-
-
-@router.get("/week")
-def get_week_caffeine(db: Session = Depends(get_db)):
-    """Get daily caffeine totals for last 7 days"""
-    # Get last 7 days including today
-    from datetime import timedelta
-    today = date.today()
-    week_ago = today - timedelta(days=6)
-
-    result = db.query(
-        func.date(CoffeeLog.timestamp).label('date'),
-        func.sum(CoffeeLog.caffeine_mg).label('total_mg'),
-        func.count(CoffeeLog.id).label('coffee_count')
-    ).filter(
-        func.date(CoffeeLog.timestamp) >= week_ago
-    ).group_by(
-        func.date(CoffeeLog.timestamp)
-    ).order_by(
-        func.date(CoffeeLog.timestamp).desc()
-    ).all()
-
-    weekly_data = []
-    total_week = 0
-    for r in result:
-        total_week += r.total_mg or 0
-        weekly_data.append({
-            "date": r.date,
-            "total_mg": round(r.total_mg or 0, 2),
-            "coffee_count": r.coffee_count
-        })
-
-    return {
-        "daily_breakdown": weekly_data,
-        "week_total_mg": round(total_week, 2),
-        "week_average_mg": round(total_week / 7, 2) if result else 0,
-        "days_with_caffeine": len(result)
-    }
 
 
 @router.get("/", response_model=List[CoffeeResponse])
@@ -221,22 +134,6 @@ def get_most_common_coffee_type(logs):
     if not types:
         return None
     return max(set(types), key=types.count)
-
-
-@router.put("/{coffee_id}", response_model=CoffeeResponse)
-@limiter.limit("60/hour")
-def update_coffee(coffee_id: int, coffee: CoffeeUpdate, request: Request, db: Session = Depends(get_db)):
-    """Fix wrong caffeine entry"""
-    db_coffee = db.query(CoffeeLog).filter(CoffeeLog.id == coffee_id).first()
-    if not db_coffee:
-        raise HTTPException(status_code=404, detail="Coffee log not found")
-
-    for field, value in coffee.dict(exclude_unset=True).items():
-        setattr(db_coffee, field, value)
-
-    db.commit()
-    db.refresh(db_coffee)
-    return db_coffee
 
 
 @router.delete("/{coffee_id}")

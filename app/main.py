@@ -13,7 +13,7 @@ import sys
 
 # Import database lazily inside functions to avoid SQLAlchemy import at module import time under Python 3.13
 import uuid
-from app.routers import coffee, heartrate
+from app.routers import coffee
 from app.auth import verify_api_key
 from app.settings import settings
 from app.limiter import limiter
@@ -58,7 +58,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Coffee Tracker API",
     version="1.0.0",
-    description="Track your caffeine addiction and cardiovascular deterioration with scientific precision",
+    description="Track your caffeine addiction with scientific precision ☕",
     docs_url="/api/v1/docs",
     redoc_url="/api/v1/redoc",
     lifespan=lifespan
@@ -160,13 +160,6 @@ app.include_router(
     coffee.router,
     prefix="/api/v1/coffee",
     tags=["coffee"],
-    dependencies=[Depends(verify_api_key)]
-)
-
-app.include_router(
-    heartrate.router,
-    prefix="/api/v1/heartrate",
-    tags=["heartrate"],
     dependencies=[Depends(verify_api_key)]
 )
 
