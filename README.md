@@ -1,6 +1,6 @@
 # Coffee Tracker API
 
-Track your caffeine consumption and heart rate with statistical analysis.
+Track your caffeine consumption with statistical analysis and decay estimation.
 
 ## Quick Start
 
@@ -35,15 +35,9 @@ curl -H "Authorization: Bearer YOUR_API_KEY" http://localhost:8000/api/v1/coffee
 
 ### Coffee
 - `POST /coffee/` - Log coffee consumption
-- `GET /coffee/today` - Today's caffeine total
-- `GET /coffee/week` - Weekly breakdown
 - `GET /coffee/stats` - Statistics
-
-### Heart Rate
-- `POST /heartrate/` - Log heart rate reading
-- `GET /heartrate/current` - Latest reading
-- `GET /heartrate/correlation` - Caffeine correlation
-- `GET /heartrate/stats` - Statistics
+- `GET /coffee/active` - [NEW] Current active caffeine
+- `GET /coffee/summary` - [NEW] Daily overview
 
 ## Configuration
 

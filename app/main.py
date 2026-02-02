@@ -174,8 +174,7 @@ def root(request: Request):
         "docs": "/api/v1/docs",
         "health": "/api/v1/health",
         "api_endpoints": {
-            "coffee": "/api/v1/coffee/",
-            "heartrate": "/api/v1/heartrate/"
+            "coffee": "/api/v1/coffee/"
         }
     }
 
@@ -231,12 +230,10 @@ def api_info(request: Request):
         "rate_limits": {
             "general": "30 requests per minute",
             "health": "60 requests per minute",
-            "coffee_logging": "100 requests per hour",
-            "heartrate_logging": "200 requests per hour"
+            "coffee_logging": "100 requests per hour"
         },
         "validation_rules": {
             "caffeine_mg": "0-1000 mg range",
-            "heart_rate": "30-250 BPM range",
             "notes_max_length": "1000 characters"
         },
         "endpoints": {
@@ -245,12 +242,6 @@ def api_info(request: Request):
                 "GET /api/v1/coffee/today": "Today's caffeine total",
                 "GET /api/v1/coffee/week": "Weekly breakdown",
                 "GET /api/v1/coffee/stats": "Consumption statistics"
-            },
-            "heartrate": {
-                "POST /api/v1/heartrate/": "Log heart rate reading",
-                "GET /api/v1/heartrate/current": "Latest heart rate",
-                "GET /api/v1/heartrate/correlation": "Caffeine correlation analysis",
-                "GET /api/v1/heartrate/stats": "Heart rate statistics"
             }
         }
     }

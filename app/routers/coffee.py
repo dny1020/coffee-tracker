@@ -147,3 +147,79 @@ def delete_coffee(coffee_id: int, request: Request, db: Session = Depends(get_db
     db.delete(db_coffee)
     db.commit()
     return {"message": "Coffee log deleted", "id": coffee_id}
+
+
+@router.get("/active")
+def get_active_caffeine(db: Session = Depends(get_db)):
+    """
+    Calculate current active caffeine in the system.
+    Uses a 5-hour half-life decay model.
+    """
+    now = datetime.now(timezone.utc)
+    # Get logs from the last 24 hours (caffeine older than 24h is negligible)
+    from datetime import timedelta
+    cutoff = now - timedelta(hours=24)
+    logs = db.query(CoffeeLog).filter(CoffeeLog.timestamp >= cutoff).all()
+    
+    total_active = 0.0
+    HALF_LIFE_HOURS = 5.0
+    
+    for log in logs:
+        # hours_passed = (now - log.timestamp.replace(tzinfo=timezone.utc)).total_seconds() / 3600
+        # Correctly handle potential naive/aware datetimes
+        log_time = log.timestamp
+        if log_time.tzinfo is None:
+            log_time = log_time.replace(tzinfo=timezone.utc)
+        
+        hours_passed = (now - log_time).total_seconds() / 3600
+        # Decay formula: N(t) = N0 * (0.5)^(t/h)
+        active = log.caffeine_mg * (0.5 ** (hours_passed / HALF_LIFE_HOURS))
+        total_active += active
+    
+    return {
+        "active_caffeine_mg": round(total_active, 2),
+        "timestamp": now,
+        "unit": "mg",
+        "formula": "5-hour half-life exponential decay"
+    }
+
+
+@router.get("/summary")
+def get_daily_summary(db: Session = Depends(get_db)):
+    """
+    Get a summary of today's consumption and health insights.
+    """
+    now = datetime.now(timezone.utc)
+    start_of_day = datetime.combine(now.date(), datetime.min.time()).replace(tzinfo=timezone.utc)
+    
+    logs = db.query(CoffeeLog).filter(CoffeeLog.timestamp >= start_of_day).all()
+    total_mg = sum(log.caffeine_mg for log in logs)
+    
+    limit = settings.recommended_daily_caffeine_mg
+    percent = (total_mg / limit) * 100 if limit > 0 else 0
+    
+    # Simple sleep insight
+    # If more than 100mg active and it's late, sleep might be affected
+    active_data = get_active_caffeine(db)
+    active_mg = active_data["active_caffeine_mg"]
+    
+    status = "Good"
+    insight = "You are within recommended limits."
+    if total_mg > limit:
+        status = "Warning"
+        insight = f"You have exceeded the recommended daily limit of {limit}mg!"
+    elif active_mg > 100 and now.hour >= 20:
+        status = "Caution"
+        insight = "High active caffeine levels late in the day might affect your sleep quality."
+
+    return {
+        "date": now.date(),
+        "total_caffeine_mg": round(total_mg, 2),
+        "daily_limit_mg": limit,
+        "limit_reached_percent": round(percent, 1),
+        "active_caffeine_mg": active_mg,
+        "status": status,
+        "insight": insight,
+        "logs_count": len(logs)
+    }
+

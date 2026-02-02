@@ -25,8 +25,7 @@ class Settings(BaseSettings):
     # Validation limits
     max_caffeine_mg: int = 1000
     recommended_daily_caffeine_mg: int = 400
-    min_heart_rate_bpm: int = 30
-    max_heart_rate_bpm: int = 250
+
 
     model_config = SettingsConfigDict(
         env_file=".env",
