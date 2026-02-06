@@ -16,18 +16,12 @@ logger = logging.getLogger(__name__)
 
 
 class CoffeeCreate(BaseModel):
-    caffeine_mg: float = Field(..., ge=0, le=1000,
-                               description="Caffeine in mg (0-1000)")
-    coffee_type: Optional[str] = Field(
-        None, max_length=100, description="Type of coffee")
-    notes: Optional[str] = Field(
-        None, max_length=1000, description="Additional notes")
+    caffeine_mg: float = Field(..., ge=0, le=1000, description="Caffeine in mg (0-1000)")
+    coffee_type: Optional[str] = Field(None, max_length=100, description="Type of coffee")
 
     @field_validator('caffeine_mg')
     @classmethod
     def validate_caffeine(cls, v):
-        if v < 0:
-            raise ValueError('Caffeine amount cannot be negative')
         if v > settings.max_caffeine_mg:
             raise ValueError(f'Caffeine amount over {settings.max_caffeine_mg}mg is dangerous')
         return v
@@ -38,16 +32,6 @@ class CoffeeCreate(BaseModel):
         if v is not None and len(v.strip()) == 0:
             return None
         return v
-    
-    @field_validator('notes')
-    @classmethod
-    def validate_notes(cls, v):
-        if v is not None:
-            # Basic sanitization: strip leading/trailing whitespace
-            v = v.strip()
-            # Remove null bytes and other control characters
-            v = ''.join(char for char in v if ord(char) >= 32 or char in '\n\r\t')
-        return v if v else None
 
 
 class CoffeeResponse(BaseModel):
@@ -55,7 +39,6 @@ class CoffeeResponse(BaseModel):
     timestamp: datetime
     caffeine_mg: float
     coffee_type: Optional[str]
-    notes: Optional[str]
 
     model_config = {"from_attributes": True}
 

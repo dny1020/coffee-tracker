@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Text, Index
+from sqlalchemy import Column, Integer, String, Float, DateTime, Index
 from sqlalchemy.orm import declarative_base
 from datetime import datetime, timezone
 
@@ -11,7 +11,6 @@ class CoffeeLog(Base):
     timestamp = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
     caffeine_mg = Column(Float, nullable=False, index=True)
     coffee_type = Column(String(100), index=True)
-    notes = Column(Text)
     
     __table_args__ = (
         Index('idx_coffee_timestamp_desc', timestamp.desc()),
