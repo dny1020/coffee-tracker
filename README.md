@@ -1,85 +1,54 @@
-# Coffee Tracker API
+# Coffee Tracker API ☕
 
-Track your caffeine consumption with statistical analysis and decay estimation.
+Track your caffeine consumption with decay estimation.
 
 ## Quick Start
 
 ```bash
-# 1. Clone and configure
-git clone <repo-url>
-cd coffee-tracker
-cp .env.example .env
-# Edit .env and set your API_KEY and POSTGRES_PASSWORD
-
-# 2. Start services
+cp .env.example .env  # Edit API_KEY
 docker-compose up -d
-
-# 3. Test
-curl http://localhost:8000/api/v1/health
+curl http://localhost:4000/api/v1/health
 ```
 
-## API Documentation
+## API
 
-- **Base URL**: `http://localhost:8000/api/v1/`
-- **Swagger UI**: `/api/v1/docs`
-- **ReDoc**: `/api/v1/redoc`
+- **Docs**: http://localhost:4000/api/v1/docs
+- **Auth**: Bearer token required
 
-### Authentication
-
-All endpoints require Bearer token authentication:
 ```bash
-curl -H "Authorization: Bearer YOUR_API_KEY" http://localhost:8000/api/v1/coffee/today
+curl -H "Authorization: Bearer YOUR_API_KEY" http://localhost:4000/api/v1/coffee/stats
 ```
 
-## Main Endpoints
+### Endpoints
 
-### Coffee
-- `POST /coffee/` - Log coffee consumption
-- `GET /coffee/stats` - Statistics
-- `GET /coffee/active` - [NEW] Current active caffeine
-- `GET /coffee/summary` - [NEW] Daily overview
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/coffee/` | Log coffee |
+| GET | `/api/v1/coffee/` | List logs |
+| GET | `/api/v1/coffee/stats` | Statistics |
+| GET | `/api/v1/coffee/active` | Active caffeine (decay) |
+| GET | `/api/v1/coffee/summary` | Daily summary |
+| DELETE | `/api/v1/coffee/{id}` | Delete log |
 
 ## Configuration
 
-Key environment variables:
 ```env
-DATABASE_URL=postgresql+psycopg2://coffee:PASSWORD@postgres:5432/coffee_db
-API_KEY=your-secret-key-here
-CORS_ORIGINS=http://localhost:3000
-ALLOWED_HOSTS=localhost,127.0.0.1
+DATABASE_URL=sqlite:///data/coffee.db
+API_KEY=your-secret-key
 ```
 
 ## Development
 
 ```bash
-# Start services
-docker-compose up -d
+# Local
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 4000
 
-# View logs
-docker-compose logs -f
-
-# Run tests
+# Tests
 pytest tests/ -v
-
-# Stop services
-docker-compose down
 ```
-
-## Deployment
-
-1. Change `API_KEY` and `POSTGRES_PASSWORD` in `.env`
-2. Configure `CORS_ORIGINS` and `ALLOWED_HOSTS`
-3. Set up HTTPS with reverse proxy
-4. Configure automated backups
-
-See [SECURITY.md](SECURITY.md) for security checklist.
-
-## Tech Stack
-
-- Python 3.11+ / FastAPI
-- PostgreSQL / SQLite
-- Docker Compose
 
 ## License
 
-Apache License 2.0 - see [LICENSE](LICENSE) file.
+Apache 2.0

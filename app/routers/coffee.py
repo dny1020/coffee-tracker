@@ -1,21 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
-from sqlalchemy import func
-from datetime import datetime, date, timezone
+from datetime import datetime, timezone
 from typing import List, Optional
 from pydantic import BaseModel, Field, field_validator
 import logging
 
 from app.database import get_db
-from app.metrics import (
-    COFFEE_LOGGED_TOTAL,
-    CAFFEINE_MG_TOTAL,
-    COFFEE_LAST_TIMESTAMP_SECONDS,
-    CAFFEINE_LAST_MG,
-)
 from app.models import CoffeeLog
-from app.limiter import limiter
-from app.settings import settings
+from app.core import limiter, settings
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -65,8 +57,7 @@ class CoffeeResponse(BaseModel):
     coffee_type: Optional[str]
     notes: Optional[str]
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 @router.post("/", response_model=CoffeeResponse)
@@ -77,16 +68,6 @@ def log_coffee(coffee: CoffeeCreate, request: Request, db: Session = Depends(get
     db.add(db_coffee)
     db.commit()
     db.refresh(db_coffee)
-    # Metrics
-    try:
-        COFFEE_LOGGED_TOTAL.labels(
-            type=(db_coffee.coffee_type or "unknown")
-        ).inc()
-        CAFFEINE_MG_TOTAL.inc(float(db_coffee.caffeine_mg))
-        CAFFEINE_LAST_MG.set(float(db_coffee.caffeine_mg))
-        COFFEE_LAST_TIMESTAMP_SECONDS.set(db_coffee.timestamp.timestamp())
-    except Exception as e:
-        logger.error(f"Coffee metrics error: {e}", exc_info=True)
     return db_coffee
 
 

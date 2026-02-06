@@ -1,48 +1,5 @@
-# Production-Ready Docker Compose
-# Includes: PostgreSQL, Coffee Tracker API
-#
-# Usage:
-#   docker-compose up -d
-#   docker-compose logs -f
-#   docker-compose down
-#
-# Access:
-#   API:        http://localhost:4000/api/v1/
-#   Docs:       http://localhost:4000/api/v1/docs
 
 services:
-  postgres:
-    image: postgres:15-alpine
-    container_name: coffee-tracker-postgres
-    environment:
-      - POSTGRES_USER=${POSTGRES_USER:-coffee}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB:-coffee_db}
-      - PGDATA=/var/lib/postgresql/data/pgdata
-    volumes:
-      - ./data/postgres:/var/lib/postgresql/data
-    networks:
-      - internal
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "pg_isready -U ${POSTGRES_USER:-coffee} -d ${POSTGRES_DB:-coffee_db}",
-        ]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: "1.0"
-          memory: 512M
-        reservations:
-          cpus: "0.25"
-          memory: 128M
-
   coffee-tracker:
     # For production: use pre-built image from GitHub Container Registry
     image: ${DOCKER_IMAGE:-ghcr.io/dny1020/coffee-tracker:${IMAGE_TAG:-latest}}
@@ -50,12 +7,9 @@ services:
     # build: .
     container_name: coffee-tracker
     pull_policy: always
-    depends_on:
-      postgres:
-        condition: service_healthy
 
     environment:
-      - DATABASE_URL=postgresql+psycopg2://${POSTGRES_USER:-coffee}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-coffee_db}
+      - DATABASE_URL=sqlite:///app/data/coffee.db
       - PYTHONPATH=/app
       - API_KEY=${API_KEY}
       - FASTAPI_ENV=${FASTAPI_ENV:-production}
@@ -65,9 +19,6 @@ services:
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
       - TZ=${TZ:-UTC}
       - SECURITY_HEADERS=${SECURITY_HEADERS:-true}
-
-    networks:
-      - internal
 
     ports:
       - "4000:4000"
@@ -82,17 +33,11 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 50s
+      start_period: 30s
 
     deploy:
       resources:
         limits:
-          cpus: "1.0"
-          memory: 512M
-        reservations:
-          cpus: "0.5"
-          memory: 256M
+          cpus: "0.25"
+          memory: 64M
 
-networks:
-  internal:
-    driver: bridge
