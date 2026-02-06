@@ -1,6 +1,5 @@
 """Coffee Tracker API."""
-from fastapi import FastAPI, Depends, Request
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, Depends
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
@@ -45,15 +44,6 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 if not os.getenv("PYTEST_CURRENT_TEST"):
     app.add_middleware(SlowAPIMiddleware)
-
-# CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.parsed_cors_origins(),
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "DELETE"],
-    allow_headers=["*"],
-)
 
 # Routes
 app.include_router(

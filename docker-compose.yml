@@ -16,7 +16,7 @@ services:
       - DEBUG=${DEBUG:-false}
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1}
-      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:4000}
       - TZ=${TZ:-UTC}
       - SECURITY_HEADERS=${SECURITY_HEADERS:-true}
 

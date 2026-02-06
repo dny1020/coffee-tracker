@@ -1,7 +1,6 @@
 """Core: settings, auth, rate limiting, models."""
 import os
 from functools import lru_cache
-from typing import List
 from datetime import datetime, timezone
 
 from fastapi import HTTPException, Security
@@ -17,18 +16,10 @@ class Settings(BaseSettings):
     database_url: str
     api_key: str
     log_level: str = "info"
-    allowed_hosts: str = "localhost,127.0.0.1"
-    cors_origins: str = "http://localhost:3000"
     max_caffeine_mg: int = 1000
     recommended_daily_caffeine_mg: int = 400
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False, extra="ignore")
-
-    def parsed_allowed_hosts(self) -> List[str]:
-        return [h.strip() for h in self.allowed_hosts.split(',') if h.strip()]
-
-    def parsed_cors_origins(self) -> List[str]:
-        return [o.strip() for o in self.cors_origins.split(',') if o.strip()]
 
 
 @lru_cache
