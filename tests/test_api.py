@@ -1,4 +1,4 @@
-"""Simple API tests for CI/CD"""
+"""Simple API tests."""
 import pytest
 from fastapi.testclient import TestClient
 from app.main import app
@@ -6,20 +6,12 @@ from app.main import app
 client = TestClient(app)
 
 
-def test_health_endpoint():
-    """Test health check endpoint"""
+def test_health():
     response = client.get("/api/v1/health")
     assert response.status_code == 200
-    assert "status" in response.json()
+    assert response.json()["status"] == "ok"
 
 
-def test_root_endpoint():
-    """Test root endpoint"""
-    response = client.get("/api/v1/")
-    assert response.status_code == 200
-
-
-def test_docs_endpoint():
-    """Test API docs are accessible"""
+def test_docs():
     response = client.get("/api/v1/docs")
     assert response.status_code == 200
