@@ -9,7 +9,7 @@ services:
     pull_policy: always
 
     environment:
-      - DATABASE_URL=sqlite:///app/data/coffee.db
+      - DATABASE_URL=sqlite:////app/data/coffee.db
       - PYTHONPATH=/app
       - API_KEY=${API_KEY}
       - FASTAPI_ENV=${FASTAPI_ENV:-production}

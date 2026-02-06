@@ -1,4 +1,1 @@
-# Data directories for persistent storage
-# Subdirectories contain service data:
-# - postgres/   PostgreSQL database files
-# - redis/      Redis persistence files
+# Directory for SQLite database (created automatically by container)
