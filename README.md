@@ -2,11 +2,18 @@
 
 Track caffeine consumption.
 
-## Setup
+## Deploy to VPS
 
 ```bash
-cp .env.example .env  # Edit API_KEY
-docker-compose up -d
+# En tu máquina local
+scp -r . user@vps:~/coffee-tracker
+
+# En el VPS
+cd ~/coffee-tracker
+cp .env.example .env
+nano .env  # Cambiar API_KEY
+mkdir -p data
+docker compose up -d --build
 ```
 
 ## Endpoints
@@ -22,7 +29,6 @@ docker-compose up -d
 
 ## Auth
 
-All `/coffee` endpoints require Bearer token:
 ```bash
 curl -H "Authorization: Bearer YOUR_API_KEY" http://localhost:4000/api/v1/coffee/today
 ```

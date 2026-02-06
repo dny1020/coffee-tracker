@@ -1,43 +1,13 @@
-
 services:
   coffee-tracker:
-    # For production: use pre-built image from GitHub Container Registry
-    image: ${DOCKER_IMAGE:-ghcr.io/dny1020/coffee-tracker:${IMAGE_TAG:-latest}}
-    # For development: uncomment below and comment above
-    # build: .
+    build: .
     container_name: coffee-tracker
-    pull_policy: always
-
-    environment:
-      - DATABASE_URL=sqlite:////app/data/coffee.db
-      - PYTHONPATH=/app
-      - API_KEY=${API_KEY}
-      - FASTAPI_ENV=${FASTAPI_ENV:-production}
-      - DEBUG=${DEBUG:-false}
-      - LOG_LEVEL=${LOG_LEVEL:-info}
-      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1}
-      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:4000}
-      - TZ=${TZ:-UTC}
-      - SECURITY_HEADERS=${SECURITY_HEADERS:-true}
-
     ports:
       - "4000:4000"
-
+    environment:
+      - DATABASE_URL=sqlite:////app/data/coffee.db
+      - API_KEY=${API_KEY}
+      - LOG_LEVEL=${LOG_LEVEL}
     volumes:
       - ./data:/app/data
-
     restart: unless-stopped
-
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4000/api/v1/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-
-    deploy:
-      resources:
-        limits:
-          cpus: "0.25"
-          memory: 64M
-
