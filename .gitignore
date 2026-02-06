@@ -48,3 +48,4 @@ docker-compose.override.yml
 
 
 server_logs.txt
+deploy.sh
