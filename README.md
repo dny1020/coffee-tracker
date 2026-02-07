@@ -1,6 +1,6 @@
 # Coffee Tracker API
 
-Track caffeine consumption.
+Track caffeine consumption ☕️.
 
 ## Deploy to VPS
 
