@@ -13,10 +13,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app/ ./app/
 
 # Non-root user
-RUN adduser -D -u 1000 appuser && \
-    mkdir -p /app/data && \
-    chown -R appuser:appuser /app
-USER appuser
+RUN adduser -D -u 1001 coffeeuser && \
+    mkdir -p /app/data /app/logs && \
+    chown -R coffeeuser:coffeeuser /app
+USER coffeeuser
 
 EXPOSE 4000
 ENV PYTHONPATH=/app

@@ -2,15 +2,29 @@
 from fastapi import FastAPI, Depends
 from contextlib import asynccontextmanager
 import logging
+import os
 
 from app.routers import coffee
 from app.core import verify_api_key, settings
 
-logging.basicConfig(
-    level=getattr(logging, settings.log_level.upper()),
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+# Crear directorio de logs
+os.makedirs("logs", exist_ok=True)
+
+# Configurar logger
+logger = logging.getLogger("coffee_tracker")
+logger.setLevel(getattr(logging, settings.log_level.upper()))
+
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+
+# Handler para archivo
+file_handler = logging.FileHandler("logs/app.log")
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
+
+# Handler para consola
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(formatter)
+logger.addHandler(console_handler)
 
 
 @asynccontextmanager

@@ -2,6 +2,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
+
+BOGOTA_TZ = ZoneInfo("America/Bogota")
 from typing import List, Optional
 from pydantic import BaseModel, Field
 
@@ -52,48 +55,58 @@ def delete(id: int, db: Session = Depends(get_db)):
 
 @router.get("/today")
 def today(db: Session = Depends(get_db)):
-    now = datetime.now(timezone.utc)
-    start = datetime.combine(now.date(), datetime.min.time()).replace(tzinfo=timezone.utc)
+    now = datetime.now(BOGOTA_TZ)
+    start = datetime.combine(now.date(), datetime.min.time()).replace(tzinfo=BOGOTA_TZ)
     
-    logs = db.query(CoffeeLog).filter(CoffeeLog.timestamp >= start).all()
+    logs = db.query(CoffeeLog).filter(CoffeeLog.timestamp >= start.astimezone(timezone.utc)).all()
     total = sum(log.caffeine_mg for log in logs)
     
-    # Calcular cafeína activa (half-life 5 horas)
-    active = 0.0
-    for log in logs:
-        hours = (now - log.timestamp.replace(tzinfo=timezone.utc)).total_seconds() / 3600
-        active += log.caffeine_mg * (0.5 ** (hours / 5))
+    # Tipos de café consumidos hoy
+    types = [log.coffee_type for log in logs if log.coffee_type]
     
-    limit = settings.recommended_daily_caffeine_mg
+    # Horas de consumo (en hora local)
+    hours = [log.timestamp.replace(tzinfo=timezone.utc).astimezone(BOGOTA_TZ).hour for log in logs]
+    peak_hour = max(set(hours), key=hours.count) if hours else None
     
     return {
-        "date": str(now.date()),
-        "total_mg": round(total, 1),
-        "active_mg": round(active, 1),
-        "limit_mg": limit,
-        "percent": round((total / limit) * 100, 1) if limit else 0,
-        "count": len(logs)
+        "total_caffeine_mg": round(total, 1),
+        "coffee_types": list(set(types)) if types else [],
+        "peak_hour": peak_hour,
+        "coffees": [
+            {
+                "time": log.timestamp.replace(tzinfo=timezone.utc).astimezone(BOGOTA_TZ).strftime("%H:%M"),
+                "type": log.coffee_type,
+                "caffeine_mg": log.caffeine_mg
+            }
+            for log in logs
+        ]
     }
 
 
 @router.get("/stats")
 def stats(days: int = Query(30, ge=1, le=365), db: Session = Depends(get_db)):
-    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
-    logs = db.query(CoffeeLog).filter(CoffeeLog.timestamp >= cutoff).all()
+    from collections import Counter
+    
+    cutoff = datetime.now(BOGOTA_TZ) - timedelta(days=days)
+    logs = db.query(CoffeeLog).filter(CoffeeLog.timestamp >= cutoff.astimezone(timezone.utc)).all()
 
     if not logs:
-        return {"message": "No data", "days": days}
+        return {"total_caffeine_mg": 0, "coffee_types": [], "peak_hours": []}
 
-    amounts = [log.caffeine_mg for log in logs]
+    total = sum(log.caffeine_mg for log in logs)
     types = [log.coffee_type for log in logs if log.coffee_type]
+    hours = [log.timestamp.replace(tzinfo=timezone.utc).astimezone(BOGOTA_TZ).hour for log in logs]
+    
+    # Top 3 horas con más consumo
+    hour_counts = Counter(hours).most_common(3)
+    peak_hours = [{"hour": h, "count": c} for h, c in hour_counts]
+    
+    # Tipos de café con cantidad
+    type_counts = Counter(types).most_common()
+    coffee_types = [{"type": t, "count": c} for t, c in type_counts]
 
     return {
-        "days": days,
-        "count": len(logs),
-        "total_mg": round(sum(amounts), 1),
-        "avg_per_day": round(sum(amounts) / days, 1),
-        "avg_per_coffee": round(sum(amounts) / len(logs), 1),
-        "max_mg": max(amounts),
-        "min_mg": min(amounts),
-        "top_type": max(set(types), key=types.count) if types else None
+        "total_caffeine_mg": round(total, 1),
+        "coffee_types": coffee_types,
+        "peak_hours": peak_hours
     }

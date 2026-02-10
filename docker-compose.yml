@@ -1,6 +1,7 @@
 services:
   coffee-tracker:
     build: .
+    image: coffee-tracker
     container_name: coffee-tracker
     ports:
       - "4000:4000"
@@ -10,4 +11,16 @@ services:
       - LOG_LEVEL=${LOG_LEVEL}
     volumes:
       - ./data:/app/data
-    restart: unless-stopped
+      - ./logs:/app/logs
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 50s
+      timeout: 20s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 128M
