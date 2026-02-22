@@ -1,78 +1,59 @@
 #!/bin/bash
 set -e
 
-REMOTE_HOST="azure"
-REMOTE_TMP="~/tmp/coffee-tracker"
-REMOTE_DIR="~/coffee-tracker"
+REMOTE="rasperry"
+APP_DIR="/opt/coffee"
 
-# Deploy to VPS (Temp folder)
-echo "Deploying to VPS (Temp: $REMOTE_TMP)..."
+echo "=== Deploying Coffee Tracker to RPI ==="
 
-# Ensure temp dir exists and is clean
-ssh $REMOTE_HOST "rm -rf $REMOTE_TMP && mkdir -p $REMOTE_TMP"
-
-rsync -avz \
-  --exclude '.git/' \
-  --exclude '.gitignore' \
-  --exclude '.venv/' \
-  --exclude '.agent/' \
-  --exclude '.gemini/' \
-  --exclude '.vscode/' \
-  --exclude '.idea/' \
-  --exclude '.pytest_cache/' \
+# Sync files
+echo "[1/4] Syncing files..."
+rsync -avz --delete \
+  --rsync-path="sudo rsync" \
   --exclude '__pycache__/' \
   --exclude '*.pyc' \
-  --exclude '*.pyo' \
+  --exclude '.venv/' \
+  --exclude '.git/' \
+  --exclude '.DS_Store' \
+  --exclude '.gitignore' \
+  --exclude '.pytest_cache/' \
   --exclude 'data/' \
   --exclude 'logs/' \
-  --exclude 'backups/' \
-  --exclude '*.db' \
-  --exclude '*.sqlite' \
-  --exclude '*.log' \
-  --exclude '.DS_Store' \
-  --exclude 'tmp/' \
-  --exclude 'output_server.txt' \
-  --exclude 'conversations.txt' \
-  --exclude 'mejoras.txt' \
-  --exclude '*_logs.txt' \
-  --exclude 'README.old.md' \
-  ./ $REMOTE_HOST:$REMOTE_TMP/
+  --exclude 'tests/' \
+  ./ ${REMOTE}:${APP_DIR}/
 
-echo "Files transferred. Building and deploying..."
+# Fix permissions
+echo "[2/4] Setting permissions..."
+ssh ${REMOTE} "sudo chown -R coffee:coffee ${APP_DIR} && sudo chmod 750 ${APP_DIR}"
 
-ssh $REMOTE_HOST "
-    set -e
-    
-    # 1. Build image in temp
-    cd $REMOTE_TMP
-    echo 'Building image...'
-    docker compose build --no-cache
-
-    # 2. Prepare production directory
-    echo 'Preparing production directory...'
-    mkdir -p $REMOTE_DIR
-    
-    # Copy essential files
-    cp .env docker-compose.yml $REMOTE_DIR/
-    
-    # Ensure data/logs dirs exist with correct permissions (UID 1001 = coffeeuser)
-    mkdir -p $REMOTE_DIR/data $REMOTE_DIR/logs
-    sudo chown -R 1001:1001 $REMOTE_DIR/data $REMOTE_DIR/logs
-
-    # 3. Deploy in production
-    cd $REMOTE_DIR
-    echo 'Restarting services...'
-    docker compose down
-    sleep 3
-    docker compose up -d
-
-    # 4. Cleanup
-    echo 'Cleaning up temp files...'
-    rm -rf $REMOTE_TMP
-
-    # 5. Show status
-    echo 'Deployment complete!'
-    docker compose ps -a
-    sleep 5
-    docker compose logs --tail=20
+# Setup venv and deps if needed
+echo "[3/4] Checking dependencies..."
+ssh ${REMOTE} "
+  if [ ! -d ${APP_DIR}/.venv ]; then
+    echo 'Creating virtualenv...'
+    sudo -u coffee python3 -m venv ${APP_DIR}/.venv
+  fi
+  sudo -u coffee ${APP_DIR}/.venv/bin/pip install -q -r ${APP_DIR}/requirements.txt
 "
+
+# Install service if not present
+ssh ${REMOTE} "
+  if [ ! -f /etc/systemd/system/coffee.service ]; then
+    echo 'Installing systemd service...'
+    sudo cp ${APP_DIR}/coffee.service /etc/systemd/system/
+    sudo systemctl daemon-reload
+    sudo systemctl enable coffee
+  fi
+"
+
+# Restart
+echo "[4/4] Restarting service..."
+ssh ${REMOTE} "sudo systemctl restart coffee"
+
+sleep 3
+echo "=== Service Status ==="
+ssh ${REMOTE} "sudo systemctl status coffee --no-pager -l"
+
+echo ""
+echo "=== Recent Logs ==="
+ssh ${REMOTE} "journalctl -u coffee.service -n 20 --no-pager"

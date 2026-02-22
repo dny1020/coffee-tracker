@@ -1,0 +1,29 @@
+[Unit]
+Description=Coffee Tracker API
+After=network.target
+
+[Service]
+Type=simple
+User=coffee
+Group=coffee
+WorkingDirectory=/opt/coffee
+Environment="PATH=/opt/coffee/.venv/bin:/usr/local/bin:/usr/bin:/bin"
+EnvironmentFile=/opt/coffee/.env
+ExecStart=/opt/coffee/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
+Restart=always
+RestartSec=5
+
+# Logs
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=coffee
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/coffee/data /opt/coffee/logs
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
