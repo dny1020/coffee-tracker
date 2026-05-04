@@ -13,6 +13,8 @@ rsync -avz --delete \
   --exclude '.git/' \
   --exclude '.DS_Store' \
   --exclude '.gitignore' \
+  --exclude '.venv/' \
+  --exclude '.cache/' \
   --exclude 'node_modules/' \
   --exclude 'dist/' \
   --exclude 'data/' \
