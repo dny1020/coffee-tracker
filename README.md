@@ -10,8 +10,8 @@ On the target host (e.g. Raspberry Pi):
 
 ```bash
 # copy files (or use ./deploy.sh)
-scp -r . user@host:/opt/coffee
-cd /opt/coffee
+scp -r . user@host:~/coffee
+cd ~/coffee
 
 # configure
 cp .env.example .env

@@ -2,14 +2,16 @@
 set -euo pipefail
 
 REMOTE="rpi"
-APP_DIR="/opt/coffee"
+APP_DIR="coffee"  # deployed under remote user's home directory
 
 echo "=== Deploying Coffee Tracker to RPI (Docker) ==="
+
+# Ensure app dir exists
+ssh ${REMOTE} "set -euo pipefail; mkdir -p ${APP_DIR}"
 
 # Sync files
 echo "[1/3] Syncing files..."
 rsync -avz --delete \
-  --rsync-path="sudo -n rsync" \
   --exclude '.git/' \
   --exclude '.DS_Store' \
   --exclude '.gitignore' \
@@ -22,13 +24,9 @@ rsync -avz --delete \
   --exclude '.env' \
   ./ ${REMOTE}:${APP_DIR}/
 
-# Ensure runtime dirs exist and make the dir writable by the SSH user
+# Ensure runtime dirs exist
 echo "[2/3] Ensuring data/logs directories exist..."
-ssh ${REMOTE} "
-  set -euo pipefail
-  sudo -n mkdir -p ${APP_DIR}/data ${APP_DIR}/logs
-  sudo -n chown -R \$(id -un):\$(id -gn) ${APP_DIR}
-"
+ssh ${REMOTE} "set -euo pipefail; mkdir -p ${APP_DIR}/data ${APP_DIR}/logs"
 
 # Build + run
 echo "[3/3] Building + starting containers..."
