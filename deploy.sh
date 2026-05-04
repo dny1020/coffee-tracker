@@ -34,6 +34,27 @@ echo "[3/3] Building + starting containers..."
 ssh ${REMOTE} "
   set -euo pipefail
   cd ${APP_DIR}
+
+  # Some installations route 'podman compose' through an external docker-compose provider.
+  # Ensure the rootless Podman socket exists so compose can connect.
+  export XDG_RUNTIME_DIR=\"/run/user/\$(id -u)\"
+  SOCK=\"\${XDG_RUNTIME_DIR}/podman/podman.sock\"
+
+  if [ ! -S \"\${SOCK}\" ]; then
+    mkdir -p \"\$(dirname \"\${SOCK}\")\"
+    if command -v systemctl >/dev/null 2>&1; then
+      systemctl --user start podman.socket >/dev/null 2>&1 || true
+    fi
+  fi
+
+  if [ ! -S \"\${SOCK}\" ]; then
+    nohup podman system service --time=0 \"unix://\${SOCK}\" >/tmp/podman-system-service.log 2>&1 &
+    sleep 1
+  fi
+
+  test -S \"\${SOCK}\" || { echo \"Podman socket not available at \${SOCK}\"; exit 1; }
+  export DOCKER_HOST=\"unix://\${SOCK}\"
+
   podman compose -f podman-compose.yml up -d --build --remove-orphans
   podman compose -f podman-compose.yml ps
 "
