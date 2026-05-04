@@ -2,18 +2,32 @@
 
 Track caffeine consumption ☕️.
 
-## Deploy to VPS
+## Deploy (systemd)
+
+This service is now **Node.js + TypeScript + Fastify + Prisma**.
+
+On the target host (e.g. Raspberry Pi):
 
 ```bash
-# En tu máquina local
-scp -r . user@vps:~/coffee-tracker
+# copy files (or use ./deploy.sh)
+scp -r . user@host:/opt/coffee
+cd /opt/coffee
 
-# En el VPS
-cd ~/coffee-tracker
+# configure
 cp .env.example .env
-nano .env  # Cambiar API_KEY
-mkdir -p data
-docker compose up -d --build
+nano .env  # set API_KEY + DATABASE_URL
+mkdir -p data logs
+
+# install + build + migrate
+npm ci
+npm run build
+npm run migrate:deploy
+
+# systemd
+sudo cp coffee.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable coffee
+sudo systemctl restart coffee
 ```
 
 ## Endpoints
@@ -30,9 +44,9 @@ docker compose up -d --build
 ## Auth
 
 ```bash
-curl -H "Authorization: Bearer YOUR_API_KEY" http://localhost:4000/api/v1/coffee/today
+curl -H "Authorization: Bearer YOUR_API_KEY" http://localhost:8000/api/v1/coffee/today
 ```
 
 ## Docs
 
-http://localhost:4000/api/v1/docs
+http://localhost:8000/api/v1/docs

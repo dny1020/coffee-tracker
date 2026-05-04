@@ -10,30 +10,29 @@ echo "=== Deploying Coffee Tracker to RPI ==="
 echo "[1/4] Syncing files..."
 rsync -avz --delete \
   --rsync-path="sudo rsync" \
-  --exclude '__pycache__/' \
-  --exclude '*.pyc' \
-  --exclude '.venv/' \
   --exclude '.git/' \
   --exclude '.DS_Store' \
   --exclude '.gitignore' \
-  --exclude '.pytest_cache/' \
+  --exclude 'node_modules/' \
+  --exclude 'dist/' \
   --exclude 'data/' \
   --exclude 'logs/' \
-  --exclude 'tests/' \
+  --exclude 'test/' \
+  --exclude '.env' \
   ./ ${REMOTE}:${APP_DIR}/
 
 # Fix permissions
 echo "[2/4] Setting permissions..."
 ssh ${REMOTE} "sudo chown -R coffee:coffee ${APP_DIR} && sudo chmod 750 ${APP_DIR}"
 
-# Setup venv and deps if needed
-echo "[3/4] Checking dependencies..."
+# Install deps, build, and migrate
+echo "[3/4] Installing dependencies + building..."
 ssh ${REMOTE} "
-  if [ ! -d ${APP_DIR}/.venv ]; then
-    echo 'Creating virtualenv...'
-    sudo -u coffee python3 -m venv ${APP_DIR}/.venv
-  fi
-  sudo -u coffee ${APP_DIR}/.venv/bin/pip install -q -r ${APP_DIR}/requirements.txt
+  set -e
+  cd ${APP_DIR}
+  sudo -u coffee npm ci --no-audit --no-fund
+  sudo -u coffee npm run build
+  sudo -u coffee bash -lc 'cd ${APP_DIR} && set -a && source .env && set +a && npm run migrate:deploy'
 "
 
 # Install service if not present

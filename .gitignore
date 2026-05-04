@@ -43,6 +43,9 @@ backups/
 *.backup
 *.sql
 
+# Node
+node_modules/
+
 # Docker
 docker-compose.override.yml
 
