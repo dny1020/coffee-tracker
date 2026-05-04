@@ -9,6 +9,7 @@ echo "=== Deploying Coffee Tracker to RPI (Podman) ==="
 # Sync files
 echo "[1/3] Syncing files..."
 rsync -avz --delete \
+  --rsync-path="sudo -n rsync" \
   --exclude '.git/' \
   --exclude '.DS_Store' \
   --exclude '.gitignore' \
@@ -20,9 +21,13 @@ rsync -avz --delete \
   --exclude '.env' \
   ./ ${REMOTE}:${APP_DIR}/
 
-# Ensure runtime dirs exist
+# Ensure runtime dirs exist and make the dir writable by the SSH user
 echo "[2/3] Ensuring data/logs directories exist..."
-ssh ${REMOTE} "set -euo pipefail; mkdir -p ${APP_DIR}/data ${APP_DIR}/logs"
+ssh ${REMOTE} "
+  set -euo pipefail
+  sudo -n mkdir -p ${APP_DIR}/data ${APP_DIR}/logs
+  sudo -n chown -R \$(id -un):\$(id -gn) ${APP_DIR}
+"
 
 # Build + run
 echo "[3/3] Building + starting containers..."
