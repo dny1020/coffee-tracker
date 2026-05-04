@@ -1,8 +1,5 @@
-import type { FastifyReply, FastifyRequest } from 'fastify';
-import type { AppConfig } from './config';
-
-export function verifyApiKey(config: Pick<AppConfig, 'API_KEY'>) {
-  return async function (request: FastifyRequest, reply: FastifyReply) {
+function verifyApiKey(config) {
+  return async function (request, reply) {
     const auth = request.headers.authorization;
     const token = auth?.toLowerCase().startsWith('bearer ') ? auth.slice(7) : undefined;
 
@@ -11,3 +8,5 @@ export function verifyApiKey(config: Pick<AppConfig, 'API_KEY'>) {
     }
   };
 }
+
+module.exports = { verifyApiKey };

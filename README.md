@@ -2,9 +2,9 @@
 
 Track caffeine consumption ☕️.
 
-## Deploy (Podman)
+## Deploy (Docker Compose)
 
-This service is **Node.js + TypeScript + Fastify + Prisma** and can run as a container.
+This service is **Node.js + Fastify + Prisma** and runs as a container.
 
 On the target host (e.g. Raspberry Pi):
 
@@ -18,12 +18,12 @@ cp .env.example .env
 nano .env  # set API_KEY (+ optionally PORT)
 mkdir -p data logs
 
-# run (this setup runs from source on the host; the container installs/builds on start)
-podman compose -f podman-compose.yml up -d
+# build + run
+docker compose up -d --build
 
 # status / logs
-podman compose -f podman-compose.yml ps
-podman compose -f podman-compose.yml logs -n 50
+docker compose ps
+docker compose logs -n 50
 ```
 
 ## Endpoints

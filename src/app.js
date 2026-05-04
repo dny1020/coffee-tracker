@@ -1,13 +1,12 @@
-import Fastify from 'fastify';
-import swagger from '@fastify/swagger';
-import swaggerUi from '@fastify/swagger-ui';
-import { PrismaClient } from '@prisma/client';
-import { PrismaLibSql } from '@prisma/adapter-libsql';
+const Fastify = require('fastify');
+const swagger = require('@fastify/swagger');
+const swaggerUi = require('@fastify/swagger-ui');
+const { PrismaClient } = require('@prisma/client');
+const { PrismaLibSql } = require('@prisma/adapter-libsql');
 
-import type { AppConfig } from './config';
-import coffeeRoutes from './routes/coffee';
+const coffeeRoutes = require('./routes/coffee');
 
-export async function buildApp(config: AppConfig) {
+async function buildApp(config) {
   const app = Fastify({
     routerOptions: {
       ignoreTrailingSlash: true
@@ -82,3 +81,5 @@ export async function buildApp(config: AppConfig) {
 
   return app;
 }
+
+module.exports = { buildApp };

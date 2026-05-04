@@ -2,14 +2,13 @@
   "name": "coffee-tracker",
   "version": "1.0.0",
   "description": "Track caffeine consumption ☕️.",
-  "main": "dist/index.js",
+  "main": "src/index.js",
   "scripts": {
-    "build": "npm run prisma:generate && tsc -p tsconfig.json",
-    "start": "node dist/index.js",
+    "start": "node src/index.js",
     "prisma:generate": "prisma generate",
     "migrate:deploy": "prisma migrate deploy",
-    "pretest": "rm -f data/test.db && DATABASE_URL=file:./data/test.db npm run migrate:deploy",
-    "test": "npm run build && DATABASE_URL=file:./data/test.db node --test"
+    "pretest": "rm -f data/test.db && npm run prisma:generate && DATABASE_URL=file:./data/test.db npm run migrate:deploy",
+    "test": "DATABASE_URL=file:./data/test.db node --test"
   },
   "repository": {
     "type": "git",
@@ -29,15 +28,11 @@
     "@prisma/adapter-libsql": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "ajv": "^8.20.0",
+    "dotenv": "^17.4.2",
     "fastify": "^5.8.5",
     "luxon": "^3.7.2",
     "prisma": "^7.8.0",
     "zod": "^4.4.2"
   },
-  "devDependencies": {
-    "@types/luxon": "^3.7.1",
-    "@types/node": "^25.6.0",
-    "dotenv": "^17.4.2",
-    "typescript": "^6.0.3"
-  }
+  "devDependencies": {}
 }

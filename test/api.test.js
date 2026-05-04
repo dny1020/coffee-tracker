@@ -1,8 +1,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const { buildApp } = require('../dist/app');
-const { loadConfig } = require('../dist/config');
+const { buildApp } = require('../src/app');
+const { loadConfig } = require('../src/config');
 
 function makeEnv(overrides = {}) {
   return {

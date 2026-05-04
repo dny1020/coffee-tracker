@@ -1,5 +1,5 @@
-import { buildApp } from './app';
-import { loadConfig } from './config';
+const { buildApp } = require('./app');
+const { loadConfig } = require('./config');
 
 async function main() {
   const config = loadConfig();

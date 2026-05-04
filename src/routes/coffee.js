@@ -1,18 +1,9 @@
-import type { FastifyPluginAsync } from 'fastify';
-import type { PrismaClient } from '@prisma/client';
-import { DateTime } from 'luxon';
-
-import type { AppConfig } from '../config';
-import { verifyApiKey } from '../auth';
+const { DateTime } = require('luxon');
+const { verifyApiKey } = require('../auth');
 
 const BOGOTA_TZ = 'America/Bogota';
 
-type CoffeeRoutesOpts = {
-  prisma: PrismaClient;
-  config: AppConfig;
-};
-
-const coffeeRoutes: FastifyPluginAsync<CoffeeRoutesOpts> = async (app, opts) => {
+async function coffeeRoutes(app, opts) {
   app.addHook('preHandler', verifyApiKey(opts.config));
 
   app.post(
@@ -45,7 +36,7 @@ const coffeeRoutes: FastifyPluginAsync<CoffeeRoutesOpts> = async (app, opts) => 
       }
     },
     async (request) => {
-      const body = request.body as { caffeine_mg: number; coffee_type?: string | null };
+      const body = request.body || {};
       const coffee = await opts.prisma.coffeeLog.create({
         data: {
           caffeine_mg: body.caffeine_mg,
@@ -87,8 +78,8 @@ const coffeeRoutes: FastifyPluginAsync<CoffeeRoutesOpts> = async (app, opts) => 
       }
     },
     async (request) => {
-      const qs = (request.query ?? {}) as { limit?: number };
-      const limit = typeof qs.limit === 'number' ? qs.limit : 50;
+      const qs = request.query || {};
+      const limit = typeof qs.limit === 'number' ? qs.limit : Number(qs.limit) || 50;
       return opts.prisma.coffeeLog.findMany({
         orderBy: { timestamp: 'desc' },
         take: limit
@@ -125,13 +116,13 @@ const coffeeRoutes: FastifyPluginAsync<CoffeeRoutesOpts> = async (app, opts) => 
       }
     },
     async (request, reply) => {
-      const params = request.params as { id: number };
-      const existing = await opts.prisma.coffeeLog.findUnique({ where: { id: params.id } });
+      const id = Number((request.params || {}).id);
+      const existing = await opts.prisma.coffeeLog.findUnique({ where: { id } });
       if (!existing) {
         return reply.status(404).send({ detail: 'Not found' });
       }
-      await opts.prisma.coffeeLog.delete({ where: { id: params.id } });
-      return { deleted: params.id };
+      await opts.prisma.coffeeLog.delete({ where: { id } });
+      return { deleted: id };
     }
   );
 
@@ -177,18 +168,18 @@ const coffeeRoutes: FastifyPluginAsync<CoffeeRoutesOpts> = async (app, opts) => 
       const total = logs.reduce((sum, l) => sum + l.caffeine_mg, 0);
       const totalRounded = Math.round(total * 10) / 10;
 
-      const types = new Set<string>();
+      const types = new Set();
       for (const l of logs) {
         if (l.coffee_type) types.add(l.coffee_type);
       }
 
-      const hourCounts = new Map<number, number>();
+      const hourCounts = new Map();
       for (const l of logs) {
         const hour = DateTime.fromJSDate(l.timestamp, { zone: 'utc' }).setZone(BOGOTA_TZ).hour;
         hourCounts.set(hour, (hourCounts.get(hour) ?? 0) + 1);
       }
 
-      let peak_hour: number | null = null;
+      let peak_hour = null;
       let peakCount = 0;
       for (const [hour, count] of hourCounts.entries()) {
         if (count > peakCount) {
@@ -202,7 +193,9 @@ const coffeeRoutes: FastifyPluginAsync<CoffeeRoutesOpts> = async (app, opts) => 
         coffee_types: Array.from(types),
         peak_hour,
         coffees: logs.map((l) => ({
-          time: DateTime.fromJSDate(l.timestamp, { zone: 'utc' }).setZone(BOGOTA_TZ).toFormat('HH:mm'),
+          time: DateTime.fromJSDate(l.timestamp, { zone: 'utc' })
+            .setZone(BOGOTA_TZ)
+            .toFormat('HH:mm'),
           type: l.coffee_type ?? null,
           caffeine_mg: l.caffeine_mg
         }))
@@ -257,8 +250,8 @@ const coffeeRoutes: FastifyPluginAsync<CoffeeRoutesOpts> = async (app, opts) => 
       }
     },
     async (request) => {
-      const qs = (request.query ?? {}) as { days?: number };
-      const days = typeof qs.days === 'number' ? qs.days : 30;
+      const qs = request.query || {};
+      const days = typeof qs.days === 'number' ? qs.days : Number(qs.days) || 30;
 
       const cutoffUtc = DateTime.now().setZone(BOGOTA_TZ).minus({ days }).toUTC().toJSDate();
       const logs = await opts.prisma.coffeeLog.findMany({
@@ -272,8 +265,8 @@ const coffeeRoutes: FastifyPluginAsync<CoffeeRoutesOpts> = async (app, opts) => 
       const total = logs.reduce((sum, l) => sum + l.caffeine_mg, 0);
       const totalRounded = Math.round(total * 10) / 10;
 
-      const typeCounts = new Map<string, number>();
-      const hourCounts = new Map<number, number>();
+      const typeCounts = new Map();
+      const hourCounts = new Map();
 
       for (const l of logs) {
         if (l.coffee_type) typeCounts.set(l.coffee_type, (typeCounts.get(l.coffee_type) ?? 0) + 1);
@@ -298,6 +291,6 @@ const coffeeRoutes: FastifyPluginAsync<CoffeeRoutesOpts> = async (app, opts) => 
       };
     }
   );
-};
+}
 
-export default coffeeRoutes;
+module.exports = coffeeRoutes;

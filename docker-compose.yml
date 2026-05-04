@@ -1,0 +1,16 @@
+services:
+  coffee-tracker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    privileged: true
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=file:/data/coffee.db
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/data
+      - ./logs:/app/logs
+    restart: unless-stopped

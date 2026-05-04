@@ -1,4 +1,4 @@
-import { z } from 'zod';
+const { z } = require('zod');
 
 const envSchema = z
   .object({
@@ -12,9 +12,7 @@ const envSchema = z
   })
   .passthrough();
 
-export type AppConfig = z.infer<typeof envSchema>;
-
-export function loadConfig(env: Record<string, unknown> = process.env): AppConfig {
+function loadConfig(env = process.env) {
   const parsed = envSchema.safeParse(env);
   if (!parsed.success) {
     const msg = parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');
@@ -22,3 +20,5 @@ export function loadConfig(env: Record<string, unknown> = process.env): AppConfi
   }
   return parsed.data;
 }
+
+module.exports = { loadConfig };
