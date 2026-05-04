@@ -1,40 +1,14 @@
-# Git
-.git
-.github
+.git/
+.github/
 
-# Python cache
-__pycache__/
-*.py[cod]
-.venv/
-*.egg-info/
+node_modules/
+dist/
 
-# IDE
-.vscode/
-.idea/
-
-# OS
-.DS_Store
-
-# Data & DB (use volumes)
+# runtime data (mounted as volumes)
 data/
-*.db
-*.sqlite3
+logs/
 
-# Tests
-tests/
-.pytest_cache/
-.coverage
-
-# Docs
-*.md
-LICENSE
-
-# Environment
+# env/secrets
 .env
-.env.*
-!.env.example
 
-# Docker/CI
-Dockerfile
-docker-compose*.yml
-.dockerignore
+.DS_Store

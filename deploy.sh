@@ -1,15 +1,14 @@
 #!/bin/bash
 set -euo pipefail
 
-REMOTE="rasperry"
+REMOTE="rpi"
 APP_DIR="/opt/coffee"
 
-echo "=== Deploying Coffee Tracker to RPI ==="
+echo "=== Deploying Coffee Tracker to RPI (Podman) ==="
 
 # Sync files
-echo "[1/4] Syncing files..."
+echo "[1/3] Syncing files..."
 rsync -avz --delete \
-  --rsync-path="sudo rsync" \
   --exclude '.git/' \
   --exclude '.DS_Store' \
   --exclude '.gitignore' \
@@ -21,48 +20,19 @@ rsync -avz --delete \
   --exclude '.env' \
   ./ ${REMOTE}:${APP_DIR}/
 
-# Fix permissions
-echo "[2/4] Setting permissions..."
-ssh ${REMOTE} "sudo chown -R coffee:coffee ${APP_DIR} && sudo chmod 750 ${APP_DIR}"
+# Ensure runtime dirs exist
+echo "[2/3] Ensuring data/logs directories exist..."
+ssh ${REMOTE} "set -euo pipefail; mkdir -p ${APP_DIR}/data ${APP_DIR}/logs"
 
-# Install deps, build, and migrate
-echo "[3/4] Installing dependencies + building..."
+# Build + run
+echo "[3/3] Building + starting containers..."
 ssh ${REMOTE} "
   set -euo pipefail
   cd ${APP_DIR}
-
-  # Ensure required runtime dirs exist
-  sudo -u coffee mkdir -p data logs
-
-  # Build requires devDependencies (typescript, prisma CLI)
-  sudo -u coffee npm ci --include=dev --no-audit --no-fund
-  sudo -u coffee npm run build
-
-  # Apply DB migrations using DATABASE_URL from .env
-  sudo -u coffee bash -lc 'cd ${APP_DIR} && set -a && source .env && set +a && npm run migrate:deploy'
-
-  # Optional: remove devDependencies after build/migrate to keep the install lean
-  sudo -u coffee npm prune --omit=dev
+  podman compose -f podman-compose.yml up -d --build --remove-orphans
+  podman compose -f podman-compose.yml ps
 "
-
-# Install service if not present
-ssh ${REMOTE} "
-  if [ ! -f /etc/systemd/system/coffee.service ]; then
-    echo 'Installing systemd service...'
-    sudo cp ${APP_DIR}/coffee.service /etc/systemd/system/
-    sudo systemctl daemon-reload
-    sudo systemctl enable coffee
-  fi
-"
-
-# Restart
-echo "[4/4] Restarting service..."
-ssh ${REMOTE} "sudo systemctl restart coffee"
-
-sleep 3
-echo "=== Service Status ==="
-ssh ${REMOTE} "sudo systemctl status coffee --no-pager -l"
 
 echo ""
 echo "=== Recent Logs ==="
-ssh ${REMOTE} "journalctl -u coffee.service -n 20 --no-pager"
+ssh ${REMOTE} "cd ${APP_DIR} && podman compose -f podman-compose.yml logs -n 50"

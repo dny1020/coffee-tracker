@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 const envSchema = z
   .object({
-    DATABASE_URL: z.string().min(1).default('file:/opt/coffee/data/coffee.db'),
+    DATABASE_URL: z.string().min(1).default('file:./data/coffee.db'),
     API_KEY: z.string().min(1).default('test-key'),
     LOG_LEVEL: z
       .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])

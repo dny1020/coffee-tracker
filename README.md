@@ -2,9 +2,9 @@
 
 Track caffeine consumption ☕️.
 
-## Deploy (systemd)
+## Deploy (Podman)
 
-This service is now **Node.js + TypeScript + Fastify + Prisma**.
+This service is **Node.js + TypeScript + Fastify + Prisma** and can run as a container.
 
 On the target host (e.g. Raspberry Pi):
 
@@ -15,19 +15,15 @@ cd /opt/coffee
 
 # configure
 cp .env.example .env
-nano .env  # set API_KEY + DATABASE_URL
+nano .env  # set API_KEY (+ optionally PORT)
 mkdir -p data logs
 
-# install + build + migrate
-npm ci
-npm run build
-npm run migrate:deploy
+# build + run
+podman compose -f podman-compose.yml up -d --build
 
-# systemd
-sudo cp coffee.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable coffee
-sudo systemctl restart coffee
+# status / logs
+podman compose -f podman-compose.yml ps
+podman compose -f podman-compose.yml logs -n 50
 ```
 
 ## Endpoints

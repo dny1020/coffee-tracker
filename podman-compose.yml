@@ -1,0 +1,17 @@
+services:
+  coffee-tracker:
+    build:
+      context: .
+      dockerfile: Containerfile
+    image: coffee-tracker:local
+    env_file:
+      - .env
+    environment:
+      # Store the SQLite DB on the host under ./data (mounted to /data)
+      - DATABASE_URL=file:/data/coffee.db
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/data
+      - ./logs:/logs
+    restart: unless-stopped
