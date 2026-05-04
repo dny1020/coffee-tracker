@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
 REMOTE="rasperry"
 APP_DIR="/opt/coffee"
@@ -28,11 +28,21 @@ ssh ${REMOTE} "sudo chown -R coffee:coffee ${APP_DIR} && sudo chmod 750 ${APP_DI
 # Install deps, build, and migrate
 echo "[3/4] Installing dependencies + building..."
 ssh ${REMOTE} "
-  set -e
+  set -euo pipefail
   cd ${APP_DIR}
-  sudo -u coffee npm ci --no-audit --no-fund
+
+  # Ensure required runtime dirs exist
+  sudo -u coffee mkdir -p data logs
+
+  # Build requires devDependencies (typescript, prisma CLI)
+  sudo -u coffee npm ci --include=dev --no-audit --no-fund
   sudo -u coffee npm run build
+
+  # Apply DB migrations using DATABASE_URL from .env
   sudo -u coffee bash -lc 'cd ${APP_DIR} && set -a && source .env && set +a && npm run migrate:deploy'
+
+  # Optional: remove devDependencies after build/migrate to keep the install lean
+  sudo -u coffee npm prune --omit=dev
 "
 
 # Install service if not present
