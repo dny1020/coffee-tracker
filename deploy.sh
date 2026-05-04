@@ -18,6 +18,7 @@ rsync -avz --delete \
   --exclude '.venv/' \
   --exclude '.cache/' \
   --exclude 'node_modules/' \
+  --exclude 'dist/' \
   --exclude 'data/' \
   --exclude 'logs/' \
   --exclude 'test/' \
@@ -27,6 +28,15 @@ rsync -avz --delete \
 # Ensure runtime dirs exist
 echo "[2/3] Ensuring data/logs directories exist..."
 ssh ${REMOTE} "set -euo pipefail; mkdir -p ${APP_DIR}/data ${APP_DIR}/logs"
+
+# Ensure .env exists
+ssh ${REMOTE} "
+  set -euo pipefail
+  if [ ! -f ${APP_DIR}/.env ]; then
+    cp ${APP_DIR}/.env.example ${APP_DIR}/.env
+    echo 'Created ${APP_DIR}/.env from .env.example (please edit API_KEY)'
+  fi
+"
 
 # Build + run
 echo "[3/3] Building + starting containers..."
