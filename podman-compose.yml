@@ -1,9 +1,8 @@
 services:
   coffee-tracker:
-    build:
-      context: .
-      dockerfile: Containerfile
-    image: coffee-tracker:local
+    image: docker.io/library/node:20-bookworm-slim
+    privileged: true
+    working_dir: /app
     env_file:
       - .env
     environment:
@@ -12,6 +11,16 @@ services:
     ports:
       - "8000:8000"
     volumes:
+      - ./:/app
+      - node_modules:/app/node_modules
       - ./data:/data
       - ./logs:/logs
+    command: >-
+      sh -lc "npm ci --include=dev --no-audit --no-fund
+      && npm run build
+      && npm run migrate:deploy
+      && node dist/index.js"
     restart: unless-stopped
+
+volumes:
+  node_modules: {}

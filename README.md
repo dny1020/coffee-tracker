@@ -18,8 +18,8 @@ cp .env.example .env
 nano .env  # set API_KEY (+ optionally PORT)
 mkdir -p data logs
 
-# build + run
-podman compose -f podman-compose.yml up -d --build
+# run (this setup runs from source on the host; the container installs/builds on start)
+podman compose -f podman-compose.yml up -d
 
 # status / logs
 podman compose -f podman-compose.yml ps

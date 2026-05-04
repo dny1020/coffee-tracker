@@ -55,7 +55,7 @@ ssh ${REMOTE} "
   test -S \"\${SOCK}\" || { echo \"Podman socket not available at \${SOCK}\"; exit 1; }
   export DOCKER_HOST=\"unix://\${SOCK}\"
 
-  podman compose -f podman-compose.yml up -d --build --remove-orphans
+  podman compose -f podman-compose.yml up -d --remove-orphans
   podman compose -f podman-compose.yml ps
 "
 
