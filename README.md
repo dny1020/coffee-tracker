@@ -26,6 +26,8 @@ docker compose ps
 docker compose logs -n 50
 ```
 
+By default this maps **host port 8001 → container port 8000** to avoid conflicts.
+
 ## Endpoints
 
 | Method | Endpoint | Description |
