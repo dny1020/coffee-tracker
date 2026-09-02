@@ -1,4 +1,5 @@
 const Fastify = require('fastify');
+const cors = require('@fastify/cors');
 const swagger = require('@fastify/swagger');
 const swaggerUi = require('@fastify/swagger-ui');
 const { PrismaClient } = require('@prisma/client');
@@ -29,6 +30,15 @@ async function buildApp(config) {
 
   app.addHook('onClose', async () => {
     await prisma.$disconnect();
+  });
+
+  // The portfolio at danilocloud.me is served from S3, so every browser call to
+  // this API is cross-origin. Only the public read endpoints need to answer it.
+  const origins = config.CORS_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean);
+  await app.register(cors, {
+    origin: origins.length ? origins : false,
+    methods: ['GET'],
+    credentials: false
   });
 
   await app.register(swagger, {
