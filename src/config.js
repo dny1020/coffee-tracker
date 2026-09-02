@@ -3,7 +3,10 @@ const { z } = require('zod');
 const envSchema = z
   .object({
     DATABASE_URL: z.string().min(1).default('file:./data/coffee.db'),
-    API_KEY: z.string().min(1).default('test-key'),
+    // No default. A public deployment must not fall back to a guessable key.
+    API_KEY: z.string().min(1),
+    // Comma-separated origins allowed to call the public read endpoints.
+    CORS_ORIGINS: z.string().default(''),
     LOG_LEVEL: z
       .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
       .default('info'),

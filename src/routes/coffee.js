@@ -4,7 +4,16 @@ const { verifyApiKey } = require('../auth');
 const BOGOTA_TZ = 'America/Bogota';
 
 async function coffeeRoutes(app, opts) {
-  app.addHook('preHandler', verifyApiKey(opts.config));
+  // Aggregate stats are published deliberately: the portfolio reads them from a
+  // static page, which cannot hold a secret. Everything else stays behind the key.
+  const PUBLIC_READS = new Set(['/api/v1/coffee/stats']);
+  const requireApiKey = verifyApiKey(opts.config);
+
+  app.addHook('preHandler', async (request, reply) => {
+    const route = request.routeOptions?.url;
+    if (request.method === 'GET' && PUBLIC_READS.has(route)) return;
+    return requireApiKey(request, reply);
+  });
 
   app.post(
     '/',
@@ -246,7 +255,7 @@ async function coffeeRoutes(app, opts) {
           }
         },
         tags: ['coffee'],
-        security: [{ bearerAuth: [] }]
+        description: 'Public. Aggregate only; no individual entries are exposed.'
       }
     },
     async (request) => {

@@ -42,6 +42,8 @@ htmlcov/
 backups/
 *.backup
 *.sql
+# ...but Prisma migrations are source, not a backup dump.
+!prisma/migrations/**/*.sql
 
 # Node
 node_modules/
